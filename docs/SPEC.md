@@ -61,18 +61,13 @@
 
 ---
 
-## 4. Milestones (Incremental Spec Slices)
+## 4. Milestones & Subsystem Specs (Created Just-in-Time)
 
-- **Milestone 1: Vehicle Control & Speed Calibration**
-  - BLE discovery and connection to Lego Hub.
-  - Steering limit calibration (left/center/right auto-homing) and drive speed calibration.
-  - Dead-man switch / emergency stop on connection drop or keyboard override.
-- **Milestone 2: Sensor Pod & Obstacle Avoidance**
-  - Micro-board firmware streaming camera and/or distance telemetry over Wi-Fi.
-  - Safety reflex layer: automatic proportional slowdown and emergency stop when obstacles breach threshold distance.
-- **Milestone 3: Vision & Target Following**
-  - Real-time object/person detection on live video stream.
-  - PID control loop keeping target centered in frame (steering) and at a target bounding-box distance (speed).
+| Milestone | Subsystem Spec | Scope |
+| :--- | :--- | :--- |
+| **M1: Vehicle Control & Calibration** | `docs/specs/01-vehicle-control.md` *(next)* | BLE hub connection, steering/speed calibration, emergency stop |
+| **M2: Sensor Pod & Obstacle Avoidance** | `docs/specs/02-sensor-pod.md` *(future)* | Wi-Fi camera/distance stream, reflex braking layer |
+| **M3: Vision & Target Following** | `docs/specs/03-vision-autonomy.md` *(future)* | Object/person tracking, closed-loop PID following |
 
 ---
 
