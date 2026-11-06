@@ -65,15 +65,16 @@
 
 | Milestone | Subsystem Spec | Scope |
 | :--- | :--- | :--- |
-| **M1: Vehicle Control & Calibration** | [`docs/specs/01-vehicle-control.md`](specs/01-vehicle-control.md) | BLE hub connection, steering/speed calibration, emergency stop |
-| **M2: Sensor Pod & Obstacle Avoidance** | `docs/specs/02-sensor-pod.md` *(future)* | Wi-Fi camera/distance stream, reflex braking layer |
-| **M3: Vision & Target Following** | `docs/specs/03-vision-autonomy.md` *(future)* | Object/person tracking, closed-loop PID following |
+| **M1: Vehicle Control & Calibration** | [`docs/specs/01-vehicle-control.md`](specs/01-vehicle-control.md) | BLE hub connection, steering/speed calibration, CLI debug keys |
+| **M2: Mobile Web UI & Teleop** | `docs/specs/02-mobile-web-ui.md` *(future)* | Phone web app over local Wi-Fi for touch driving, telemetry & e-stop |
+| **M3: Autonomous Driving Maneuvers** | `docs/specs/03-driving-maneuvers.md` *(future)* | Parallel parking, 3-point turn & skills via wheel encoders + Hub IMU |
+| **M4: Sensor Pod & Obstacle Avoidance** | `docs/specs/04-sensor-pod.md` *(future)* | Wi-Fi camera/distance stream, reflex braking layer |
+| **M5: Vision & Target Following** | `docs/specs/05-vision-autonomy.md` *(future)* | Object/person tracking, closed-loop PID following |
 
 ---
 
 ## 5. Locked Hardware & Stack Decisions (Formerly TBDs)
-
 - [x] **TBD-1 (Lego Car & Ports):** LEGO Technic **42124 Off-Road Buggy** (`TechnicHub 88012`, Tire Ø `71.6mm`; **Port A** = Drive CCW, **Port B** = Steering).
 - [x] **TBD-3 (Host Stack & Firmware):** **Python 3.11+** on macOS using `bleak` (LWP3 BLE protocol over stock LEGO firmware).
 - [x] **TBD-4 (Speed Calibration):** Encoder `deg/s` + wheel circumference + `k_cal` correction factor verified via 1-meter floor run.
-- [ ] **TBD-2 (Micro-Board & Sensor Selection — Deferred to M2):** Select Wi-Fi camera/sensor board (e.g., XIAO ESP32S3 Sense / Pi Zero 2W) and ToF range sensor before Milestone 2.
+- [ ] **TBD-2 (Micro-Board & Sensor Selection — Deferred to M4):** Select Wi-Fi camera/sensor board and range sensor before Milestone 4.

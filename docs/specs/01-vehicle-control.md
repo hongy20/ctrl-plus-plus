@@ -34,9 +34,10 @@
 - **VC-06:** `WHEN set_speed(target_mps) is called, THE VehicleDriver SHALL convert m/s to motor deg/s using: deg_per_sec = (target_mps / (π * 0.0716)) * 360 * gear_ratio * k_cal.`
 - **VC-07:** `WHEN calibrate_speed_1m() runs, THE VehicleDriver SHALL drive a fixed encoder revolution count, accept measured ground distance (m), and persist k_cal to config.`
 
-### Safety & Fail-Safe Invariants
+### Safety, Fail-Safe & Temporary CLI Controls
 - **VC-08:** `WHEN BLE disconnects or telemetry lags > 200ms, THE VehicleDriver SHALL transition to EMERGENCY_STOP and cut motor power to 0.`
 - **VC-09:** `WHEN the user presses SPACE or ESC, THE VehicleDriver SHALL immediately command brake/coast (power = 0) on Ports A and B.`
+- **VC-10:** `WHILE running the M1 debug CLI, THE CLI SHALL map W/S (forward/reverse), A/D (steer left/right), C (center steer), and 1/2/3 (speed presets).`
 
 ---
 
