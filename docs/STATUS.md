@@ -10,8 +10,9 @@
 - [x] Adopted layered SDD structure (`SPEC.md` + `docs/specs/` + anti-bloat rules).
 - [x] Locked hardware & stack (`TBD-1`, `TBD-3`, `TBD-4`): LEGO 42124 (`Port A` Drive, `Port B` Steer), Python 3.11+ with `bleak` (LWP3).
 - [x] Drafted & approved [`docs/specs/01-vehicle-control.md`](specs/01-vehicle-control.md).
+- [x] Created Milestone 1 TDD plan [`docs/plans/01-vehicle-control-plan.md`](plans/01-vehicle-control-plan.md).
 
 ---
 
 ## Next Step
-Create disposable task checklist `docs/plans/01-vehicle-control-plan.md` and start TDD implementation of Milestone 1.
+Start **Task 1** in [`docs/plans/01-vehicle-control-plan.md`](plans/01-vehicle-control-plan.md): Project scaffold & `contracts.py`.
