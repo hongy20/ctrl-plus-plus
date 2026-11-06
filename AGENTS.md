@@ -12,10 +12,10 @@ Before proposing code or answering architectural questions, read:
 - **Short Chat Responses:** Keep chat replies under ~15 lines unless asked for deep detail. Use short bullets, no walls of text.
 - **Layered Docs with Hard Line Caps:**
   - `docs/SPEC.md` (≤ 80 lines): System map, ADRs, milestone index, global `TBD`s only.
-  - `docs/specs/0X-<name>.md` (≤ 80 lines each): Created **just-in-time** per milestone. Use state diagrams and 1-line EARS rules (`WHEN [trigger], THE [component] SHALL [action]`). No prose essays.
-  - `docs/plans/0X-<name>-plan.md`: Disposable TDD task checklist for the active milestone.
+  - `docs/specs/<domain>.md` (≤ 80 lines each): Living domain specs created **just-in-time**. Use state diagrams and 1-line EARS rules (`WHEN [trigger], THE [component] SHALL [action]`). No prose essays.
+  - `docs/plans/<milestone-or-change>.md`: Disposable TDD task checklist for active work (skip for 1–2 task tweaks).
   - `docs/STATUS.md` (≤ 30 lines): Current state and next step only.
-- **Code Owns Schemas:** Once code exists, Python types (`Protocol`/`dataclass`) and `pytest` tests own exact data shapes—link to them instead of copying code into Markdown.
+- **Code Owns Schemas:** Once code exists, TypeScript types (`interface`/`type`) and `vitest` tests own exact data shapes—link to them instead of copying code into Markdown.
 
 ## 3. Working Agreement
 - **Spec First, Code Second:** Update the relevant spec before writing implementation code.
