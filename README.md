@@ -63,15 +63,16 @@ Because context is stored in versioned Markdown files rather than chat history, 
 
 ```text
 lego-autopilot/
-├── AGENTS.md              # Universal AI agent bootloader & SDD workflow rules
-├── README.md              # Project overview, setup, and developer guide
+├── AGENTS.md              # AI agent rules & anti-bloat guardrails
+├── README.md              # Project overview & setup guide
 ├── docs/
-│   ├── SPEC.md            # Living System Specification (Architecture, ADRs, Contracts, TBDs)
-│   ├── STATUS.md          # Cross-session progress tracker & handoff state
-│   └── PLAN.md            # (Upcoming) Atomic task breakdown for the active milestone
-├── src/                   # (Upcoming) Off-board Brain host application (BLE, CV, Control)
-├── firmware/              # (Upcoming) Micro-board camera & sensor streaming firmware
-└── tests/                 # (Upcoming) Unit, contract, and mock-hardware simulation tests
+│   ├── SPEC.md            # High-level System Map, ADRs & global TBDs (≤80 lines)
+│   ├── STATUS.md          # Cross-session handoff state (≤30 lines)
+│   ├── specs/             # Per-milestone EARS specs (≤80 lines each, created just-in-time)
+│   └── plans/             # Disposable TDD task checklists
+├── src/                   # (Upcoming) Off-board Brain host application
+├── firmware/              # (Upcoming) Micro-board streaming firmware
+└── tests/                 # (Upcoming) Unit & mock-hardware tests
 ```
 
 ---
