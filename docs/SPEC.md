@@ -65,8 +65,8 @@
 
 | Milestone | Subsystem Spec | Scope |
 | :--- | :--- | :--- |
-| **M1: Vehicle Control & Calibration** | [`docs/specs/01-vehicle-control.md`](specs/01-vehicle-control.md) | BLE hub connection, steering/speed calibration, CLI debug keys |
-| **M2: Mobile Web UI & Teleop** | `docs/specs/02-mobile-web-ui.md` *(future)* | Phone web app over local Wi-Fi for touch driving, telemetry & e-stop |
+| **M1: Vehicle Control & Calibration** | [`docs/specs/01-vehicle-control.md`](specs/01-vehicle-control.md) | BLE hub, steering/speed calibration, realistic progressive braking |
+| **M2: Mobile Web UI & Teleop** | `docs/specs/02-mobile-web-ui.md` *(future)* | Phone web app with device-motion (tilt) steering/throttle, telemetry & e-stop |
 | **M3: Autonomous Driving Maneuvers** | `docs/specs/03-driving-maneuvers.md` *(future)* | Parallel parking, 3-point turn & skills via wheel encoders + Hub IMU |
 | **M4: Sensor Pod & Obstacle Avoidance** | `docs/specs/04-sensor-pod.md` *(future)* | Wi-Fi camera/distance stream, reflex braking layer |
 | **M5: Vision & Target Following** | `docs/specs/05-vision-autonomy.md` *(future)* | Object/person tracking, closed-loop PID following |

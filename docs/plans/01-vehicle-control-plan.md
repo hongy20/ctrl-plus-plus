@@ -17,8 +17,8 @@
   - Create `src/lego_autopilot/vehicle_driver.py`: implement `calibrate_steering()` (left/right stall detection, `center = (left + right) / 2`, 90% range clamp) and `set_steering(norm)`.
   - Verify: `pytest tests/test_steering.py` (using `MockBleTransport`)
 
-- [ ] **Task 4: Speed Calibration & Conversion (`VC-06`, `VC-07`)**
-  - Add `set_speed(target_mps)` (`Tire Ø = 71.6mm`, `Port A` inverted) and `calibrate_speed_1m()` with persistent `k_cal`.
+- [ ] **Task 4: Speed Calibration & Progressive Braking (`VC-06`, `VC-07`, `VC-11`)**
+  - Add `set_speed(target_mps)` (`Tire Ø = 71.6mm`, `Port A` inverted), `calibrate_speed_1m()` with persistent `k_cal`, and `brake(intensity)` closed-loop 20 Hz deceleration ramp + low-speed hold.
   - Verify: `pytest tests/test_speed.py`
 
 - [ ] **Task 5: Dead-Man Switch & Keyboard Emergency Stop (`VC-08`, `VC-09`)**

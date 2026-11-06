@@ -118,9 +118,9 @@ cd lego-autopilot
 
 - [x] **Phase 1 & 2: Architecture Baseline & Hardware Discovery**
 - [ ] **Milestone 1: Vehicle Control & Speed Calibration** *(Active)*
-  - BLE hub connection, steering limit auto-homing, speed calibration, and CLI debug controls.
+  - BLE hub connection, steering limit auto-homing, speed calibration, realistic progressive braking, and CLI debug controls.
 - [ ] **Milestone 2: Mobile Web UI & Teleop Dashboard**
-  - Local Wi-Fi web UI for mobile phone control (touch steering/throttle, telemetry, emergency stop).
+  - Local Wi-Fi web UI for mobile phone control with device-motion (tilt) steering/throttle, live telemetry, and emergency stop.
 - [ ] **Milestone 3: Autonomous Driving Maneuvers**
   - Parallel parking, 3-point turn, and precision driving skills using motor encoders + Hub IMU.
 - [ ] **Milestone 4: Sensor Pod & Obstacle Avoidance**
