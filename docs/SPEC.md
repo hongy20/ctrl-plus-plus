@@ -63,13 +63,13 @@
 
 ## 4. Milestones & Subsystem Specs (Created Just-in-Time)
 
-| Milestone | Subsystem Spec | Scope |
+| Milestone | Domain Spec | Scope |
 | :--- | :--- | :--- |
-| **M1: Vehicle Control & Calibration** | [`docs/specs/01-vehicle-control.md`](specs/01-vehicle-control.md) | BLE hub, steering/speed calibration, realistic progressive braking |
-| **M2: Mobile Web UI & Teleop** | `docs/specs/02-mobile-web-ui.md` *(future)* | Phone web app with device-motion (tilt) steering/throttle, telemetry & e-stop |
-| **M3: Autonomous Driving Maneuvers** | `docs/specs/03-driving-maneuvers.md` *(future)* | Parallel parking, 3-point turn & skills via wheel encoders + Hub IMU |
-| **M4: Sensor Pod & Obstacle Avoidance** | `docs/specs/04-sensor-pod.md` *(future)* | Wi-Fi camera/distance stream, reflex braking layer |
-| **M5: Vision & Target Following** | `docs/specs/05-vision-autonomy.md` *(future)* | Object/person tracking, closed-loop PID following |
+| **M1: Vehicle Control & Calibration** | [`docs/specs/vehicle-control.md`](specs/vehicle-control.md) | BLE hub, steering/speed calibration, realistic progressive braking |
+| **M2: Mobile Web UI & Teleop** | `docs/specs/mobile-web-ui.md` *(future)* | Phone web app with device-motion (tilt) steering/throttle, telemetry & e-stop |
+| **M3: Autonomous Driving Maneuvers** | `docs/specs/driving-maneuvers.md` *(future)* | Parallel parking, 3-point turn & skills via wheel encoders + Hub IMU |
+| **M4: Sensor Pod & Obstacle Avoidance** | `docs/specs/sensor-pod.md` *(future)* | Wi-Fi camera/distance stream, reflex braking layer |
+| **M5: Vision & Target Following** | `docs/specs/vision-autonomy.md` *(future)* | Object/person tracking, closed-loop PID following |
 
 ---
 

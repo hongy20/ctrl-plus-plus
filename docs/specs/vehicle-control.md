@@ -1,4 +1,4 @@
-# M1 Spec: Vehicle Control & Speed Calibration (`01-vehicle-control`)
+# Domain Spec: Vehicle Control & Speed Calibration (`vehicle-control`)
 
 - **Status:** Approved v1.0
 - **Hardware:** LEGO Technic 42124 Off-Road Buggy (`TechnicHub 88012`)

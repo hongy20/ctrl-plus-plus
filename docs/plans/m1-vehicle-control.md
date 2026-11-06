@@ -1,6 +1,6 @@
 # M1 Implementation Plan: Vehicle Control & Speed Calibration (TypeScript)
 
-> **Spec Reference:** [`docs/specs/01-vehicle-control.md`](../specs/01-vehicle-control.md)
+> **Spec Reference:** [`docs/specs/vehicle-control.md`](../specs/vehicle-control.md)
 
 ## Tasks (TDD Loop: Failing Test → Minimal Code → Pass → Commit)
 
