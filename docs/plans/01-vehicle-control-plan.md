@@ -1,29 +1,29 @@
-# M1 Implementation Plan: Vehicle Control & Speed Calibration
+# M1 Implementation Plan: Vehicle Control & Speed Calibration (TypeScript)
 
 > **Spec Reference:** [`docs/specs/01-vehicle-control.md`](../specs/01-vehicle-control.md)
 
 ## Tasks (TDD Loop: Failing Test → Minimal Code → Pass → Commit)
 
-- [ ] **Task 1: Project Scaffold & Contracts (`VC-01`, `VC-02`)**
-  - Create `pyproject.toml` (`python >= 3.11`, `bleak`, `pytest`, `pytest-asyncio`).
-  - Create `src/lego_autopilot/contracts.py`: `DriverState` enum, `MotorTelemetry` dataclass, and `BleTransport` protocol.
-  - Verify: `pytest tests/test_contracts.py`
+- [ ] **Task 1: TypeScript Project Scaffold & Contracts (`VC-01`, `VC-02`)**
+  - Create `package.json`, `tsconfig.json` (Node.js 20+, TypeScript, `vitest`, `tsx`, `node-poweredup`).
+  - Create `src/contracts.ts`: `DriverState` type, `MotorTelemetry` interface, and `HubAdapter` interface.
+  - Verify: `npm test` (`tests/contracts.test.ts`)
 
-- [ ] **Task 2: LWP3 Packet Codec (`VC-01`, `VC-05`, `VC-06`)**
-  - Create `src/lego_autopilot/lwp3.py`: encode motor power/speed/angle commands and decode port encoder notifications for `Port A` (0x00) and `Port B` (0x01).
-  - Verify: `pytest tests/test_lwp3.py`
+- [ ] **Task 2: Mock & `node-poweredup` Hub Adapter (`VC-01`, `VC-02`)**
+  - Create `src/hub-adapter.ts`: wrap `node-poweredup` discovery/connection (`TechnicHub 88012`), `Port A`/`Port B` motor control, encoder notifications, and `MockHubAdapter` for offline tests.
+  - Verify: `npm test` (`tests/hub-adapter.test.ts`)
 
 - [ ] **Task 3: Steering Auto-Homing & Clamping (`VC-03`, `VC-04`, `VC-05`)**
-  - Create `src/lego_autopilot/vehicle_driver.py`: implement `calibrate_steering()` (left/right stall detection, `center = (left + right) / 2`, 90% range clamp) and `set_steering(norm)`.
-  - Verify: `pytest tests/test_steering.py` (using `MockBleTransport`)
+  - Create `src/vehicle-driver.ts`: implement `calibrateSteering()` (left/right stall detection, `center = (left + right) / 2`, 90% range clamp) and `setSteering(norm)`.
+  - Verify: `npm test` (`tests/steering.test.ts`)
 
 - [ ] **Task 4: Speed Calibration & Progressive Braking (`VC-06`, `VC-07`, `VC-11`)**
-  - Add `set_speed(target_mps)` (`Tire Ø = 71.6mm`, `Port A` inverted), `calibrate_speed_1m()` with persistent `k_cal`, and `brake(intensity)` closed-loop 20 Hz deceleration ramp + low-speed hold.
-  - Verify: `pytest tests/test_speed.py`
+  - Add `setSpeed(targetMps)` (`Tire Ø = 71.6mm`, `Port A` inverted), `calibrateSpeed1m()` with persistent `kCal`, and `brake(intensity)` closed-loop 20 Hz deceleration ramp + low-speed hold.
+  - Verify: `npm test` (`tests/speed-brake.test.ts`)
 
 - [ ] **Task 5: Dead-Man Switch & Keyboard Emergency Stop (`VC-08`, `VC-09`)**
-  - Add `200ms` telemetry/disconnect watchdog (`EMERGENCY_STOP` → power `0`) and CLI `SPACE`/`ESC` emergency brake handler.
-  - Verify: `pytest tests/test_safety.py`
+  - Add `200ms` telemetry/disconnect watchdog (`EMERGENCY_STOP` → power `0`) and emergency stop handler.
+  - Verify: `npm test` (`tests/safety.test.ts`)
 
-- [ ] **Task 6: Hardware Bench & 1m Floor CLI (`scripts/m1_cli.py`)**
-  - Create interactive CLI for real `TechnicHub 88012` bench test (wheels off ground) and 1m floor calibration.
+- [ ] **Task 6: Hardware Bench & 1m Floor CLI (`src/cli/m1-cli.ts`) (`VC-10`)**
+  - Create interactive terminal controller (`W/A/S/D`, `B` progressive brake, `C` center, `1/2/3` speed, `SPACE` e-stop) for real `TechnicHub 88012` bench & 1m floor calibration.

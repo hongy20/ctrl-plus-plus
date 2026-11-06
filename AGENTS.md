@@ -15,7 +15,7 @@ Before proposing code or answering architectural questions, read:
   - `docs/specs/0X-<name>.md` (≤ 80 lines each): Created **just-in-time** per milestone. Use state diagrams and 1-line EARS rules (`WHEN [trigger], THE [component] SHALL [action]`). No prose essays.
   - `docs/plans/0X-<name>-plan.md`: Disposable TDD task checklist for the active milestone.
   - `docs/STATUS.md` (≤ 30 lines): Current state and next step only.
-- **Code Owns Schemas:** Once code exists, Python types (`Protocol`/`dataclass`) and `pytest` tests own exact data shapes—link to them instead of copying code into Markdown.
+- **Code Owns Schemas:** Once code exists, TypeScript types (`interface`/`type`) and `vitest` tests own exact data shapes—link to them instead of copying code into Markdown.
 
 ## 3. Working Agreement
 - **Spec First, Code Second:** Update the relevant spec before writing implementation code.

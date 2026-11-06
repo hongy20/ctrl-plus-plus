@@ -75,6 +75,6 @@
 
 ## 5. Locked Hardware & Stack Decisions (Formerly TBDs)
 - [x] **TBD-1 (Lego Car & Ports):** LEGO Technic **42124 Off-Road Buggy** (`TechnicHub 88012`, Tire Ø `71.6mm`; **Port A** = Drive CCW, **Port B** = Steering).
-- [x] **TBD-3 (Host Stack & Firmware):** **Python 3.11+** on macOS using `bleak` (LWP3 BLE protocol over stock LEGO firmware).
+- [x] **TBD-3 (Host Stack & Firmware):** **100% TypeScript (Node.js 20+)** on macOS using `node-poweredup` / `@abandonware/noble` (LWP3 over stock LEGO firmware), `vitest` for tests, and `onnxruntime-node` (CoreML) for M5 vision.
 - [x] **TBD-4 (Speed Calibration):** Encoder `deg/s` + wheel circumference + `k_cal` correction factor verified via 1-meter floor run.
 - [ ] **TBD-2 (Micro-Board & Sensor Selection — Deferred to M4):** Select Wi-Fi camera/sensor board and range sensor before Milestone 4.

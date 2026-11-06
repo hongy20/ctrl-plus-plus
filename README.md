@@ -92,9 +92,9 @@ lego-autopilot/
 > [!NOTE]
 > Implementation begins once **Milestone 1 (Vehicle Control & Speed Calibration)** specifications are finalized in [`docs/SPEC.md`](docs/SPEC.md).
 
-### 1. Prerequisites (`TBD`)
+### 1. Prerequisites
 - Host OS: macOS with Bluetooth enabled
-- Runtime & dependencies: `TBD` (e.g., Python 3.11+ / `uv` or `venv`)
+- Runtime: **Node.js 20+ & TypeScript** (`node-poweredup`, `vitest`, `onnxruntime-node`)
 
 ### 2. Installation (`TBD`)
 ```bash

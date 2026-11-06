@@ -4,7 +4,7 @@
 - **Hardware:** LEGO Technic 42124 Off-Road Buggy (`TechnicHub 88012`)
   - **Port A:** Drive Motor (`88013`, counterclockwise = forward, tire Ø = `71.6mm`)
   - **Port B:** Steering Motor (`88013`)
-- **Stack:** Python 3.11+ (`bleak`, LWP3 BLE protocol over stock LEGO firmware)
+- **Stack:** TypeScript / Node.js 20+ (`node-poweredup` / `@abandonware/noble`, LWP3 BLE protocol over stock LEGO firmware, `vitest`)
 
 ---
 
@@ -43,6 +43,6 @@
 ---
 
 ## 3. Verification Plan
-1. **Unit / Mock Tests (`tests/test_vehicle_control.py`):** Verify state transitions, steering clamp math, `m/s` conversion, and `> 200ms` watchdog timeout using `MockBleTransport`.
+1. **Unit / Mock Tests (`tests/vehicle-driver.test.ts`):** Verify state transitions, steering clamp math, `m/s` conversion, progressive braking, and `> 200ms` watchdog timeout using `MockHubAdapter`.
 2. **Bench Test (Wheels Off Ground):** Verify BLE connect, auto-homing steering center, and `SPACE` emergency stop.
-3. **Floor Test (1-Meter Run):** Run `calibrate_speed_1m` to verify physical ground distance matches target.
+3. **Floor Test (1-Meter Run):** Run `calibrateSpeed1m` to verify physical ground distance matches target.
