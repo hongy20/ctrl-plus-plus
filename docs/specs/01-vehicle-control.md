@@ -22,7 +22,8 @@
 ## 2. EARS Behavioral Requirements
 
 ### Connection & Telemetry
-- **VC-01:** `WHEN connect() is called, THE VehicleDriver SHALL scan for LWP3 UUID (00001623-1212-efde-1623-785feabcd123) and subscribe to Port A/B encoder notifications.`
+- **VC-01:** `WHEN discovering hubs, THE VehicleDriver SHALL list discovered LWP3 hubs (name, uuid, rssi) and require explicit user selection/confirmation before connecting to a single target hub.`
+- **VC-12:** `WHEN connected to the confirmed hub, THE VehicleDriver SHALL set the Hub LED to an active indicator color (e.g., Cyan) and subscribe to Port A/B encoder notifications.`
 - **VC-02:** `WHILE connected, THE VehicleDriver SHALL emit encoder telemetry (deg, deg/s) at >= 10 Hz.`
 
 ### Steering Calibration & Control

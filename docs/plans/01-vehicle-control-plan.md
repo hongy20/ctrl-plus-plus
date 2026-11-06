@@ -6,11 +6,11 @@
 
 - [ ] **Task 1: TypeScript Project Scaffold & Contracts (`VC-01`, `VC-02`)**
   - Create `package.json`, `tsconfig.json` (Node.js 20+, TypeScript, `vitest`, `tsx`, `node-poweredup`).
-  - Create `src/contracts.ts`: `DriverState` type, `MotorTelemetry` interface, and `HubAdapter` interface.
+  - Create `src/contracts.ts`: `DriverState` type, `DiscoveredHub` & `MotorTelemetry` interfaces, and `HubAdapter` interface.
   - Verify: `npm test` (`tests/contracts.test.ts`)
 
-- [ ] **Task 2: Mock & `node-poweredup` Hub Adapter (`VC-01`, `VC-02`)**
-  - Create `src/hub-adapter.ts`: wrap `node-poweredup` discovery/connection (`TechnicHub 88012`), `Port A`/`Port B` motor control, encoder notifications, and `MockHubAdapter` for offline tests.
+- [ ] **Task 2: Mock & `node-poweredup` Hub Adapter (`VC-01`, `VC-02`, `VC-12`)**
+  - Create `src/hub-adapter.ts`: wrap `node-poweredup` multi-hub discovery (`scanHubs()` returning `name`, `uuid`, `rssi`), single-hub `connect(uuid)` after confirmation, Hub LED indicator, `Port A`/`Port B` motor control, and `MockHubAdapter`.
   - Verify: `npm test` (`tests/hub-adapter.test.ts`)
 
 - [ ] **Task 3: Steering Auto-Homing & Clamping (`VC-03`, `VC-04`, `VC-05`)**
