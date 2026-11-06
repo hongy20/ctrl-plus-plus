@@ -65,15 +65,15 @@
 
 | Milestone | Subsystem Spec | Scope |
 | :--- | :--- | :--- |
-| **M1: Vehicle Control & Calibration** | `docs/specs/01-vehicle-control.md` *(next)* | BLE hub connection, steering/speed calibration, emergency stop |
+| **M1: Vehicle Control & Calibration** | [`docs/specs/01-vehicle-control.md`](specs/01-vehicle-control.md) | BLE hub connection, steering/speed calibration, emergency stop |
 | **M2: Sensor Pod & Obstacle Avoidance** | `docs/specs/02-sensor-pod.md` *(future)* | Wi-Fi camera/distance stream, reflex braking layer |
 | **M3: Vision & Target Following** | `docs/specs/03-vision-autonomy.md` *(future)* | Object/person tracking, closed-loop PID following |
 
 ---
 
-## 5. Open Questions & TBDs (To Be Resolved Before Milestone 1 Spec Freeze)
+## 5. Locked Hardware & Stack Decisions (Formerly TBDs)
 
-- [ ] **TBD-1 (Lego Car Model & Hub Type):** Which specific Lego Technic set / Hub model is used (e.g., 4-port Technic Hub `88012`), and which ports are connected to Drive vs. Steering motors?
-- [ ] **TBD-2 (Micro-Board & Sensor Selection):** Which micro-board (e.g., ESP32-CAM, XIAO ESP32S3 Sense, or Raspberry Pi Zero 2W) and range sensor (e.g., VL53L1X ToF laser vs. HC-SR04 ultrasonic) will we use?
-- [ ] **TBD-3 (Host Language & Stack):** Confirm primary language for the Off-board Brain on Mac (Recommended: Python 3.11+ with `bleak` / `pylgbst` + `opencv` / `ultralytics`).
-- [ ] **TBD-4 (Speed Calibration Method):** How should physical ground speed (`m/s`) be calibrated against motor power/encoder ticks (e.g., timed 1-meter straight-line run using motor encoders vs. visual markers)?
+- [x] **TBD-1 (Lego Car & Ports):** LEGO Technic **42124 Off-Road Buggy** (`TechnicHub 88012`, Tire Ø `71.6mm`; **Port A** = Drive CCW, **Port B** = Steering).
+- [x] **TBD-3 (Host Stack & Firmware):** **Python 3.11+** on macOS using `bleak` (LWP3 BLE protocol over stock LEGO firmware).
+- [x] **TBD-4 (Speed Calibration):** Encoder `deg/s` + wheel circumference + `k_cal` correction factor verified via 1-meter floor run.
+- [ ] **TBD-2 (Micro-Board & Sensor Selection — Deferred to M2):** Select Wi-Fi camera/sensor board (e.g., XIAO ESP32S3 Sense / Pi Zero 2W) and ToF range sensor before Milestone 2.
