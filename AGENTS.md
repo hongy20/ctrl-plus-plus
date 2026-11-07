@@ -16,7 +16,7 @@ Do **not** passively wait for micro-instructions or leave uncommitted changes ha
    - Run a **Spec-Auditor Sub-Agent** to verify zero legacy/desktop contradictions.
    - **Spec PR Checkpoint:** Whenever specs, architecture, or workflow docs are updated and agreed upon, **stop and ask the user for permission** to create a branch, commit, push, and open a PR before starting implementation.
 2. **Mode B — Autonomous Engineering Manager (After Spec PR is Merged):**
-   - Pull `main` → dispatch **Implementer** & **Reviewer** sub-agents (`invoke_subagent`) to complete TDD tasks → verify `npm test && npm run build` → update `docs/STATUS.md` → **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR.
+   - Pull `main` → dispatch **Implementer** & **Reviewer** sub-agents (`invoke_subagent`) to complete TDD tasks → verify `npm run lint && npm test && npm run build` and doc line caps (`docs/specs/ci-cd.md`) → update `docs/STATUS.md` → **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR.
 
 ## 3. Anti-Bloat & Brevity Rules (CRITICAL)
 - **Short Chat Responses:** Keep chat replies under ~15 lines unless asked for deep detail. Use short bullets, no walls of text.

@@ -1,13 +1,13 @@
 # M1 Implementation Plan: Web Bluetooth Vehicle Control & Speed Calibration
 
-> **Spec References:** [`docs/specs/vehicle-control.md`](../specs/vehicle-control.md) (`VC-01`..`VC-11`), [`docs/specs/mobile-web-ui.md`](../specs/mobile-web-ui.md) (`UI-01`..`UI-06`)
+> **Spec References:** [`docs/specs/vehicle-control.md`](../specs/vehicle-control.md) (`VC-01`..`VC-11`), [`docs/specs/mobile-web-ui.md`](../specs/mobile-web-ui.md) (`UI-01`..`UI-06`), [`docs/specs/ci-cd.md`](../specs/ci-cd.md) (`CI-01`..`CI-03`)
 
 ## Tasks (TDD Loop: Failing Test → Minimal Code → Pass → Commit)
 
-- [ ] **Task 1: Vite + React + TypeScript + PWA Scaffold & Contracts (`VC-01`, `VC-03`)**
-  - Create `package.json`, `tsconfig.json`, `vite.config.ts` (React 19, TypeScript, Tailwind CSS, `@vitejs/plugin-basic-ssl`, `vite-plugin-pwa`, `vitest`), and `.gitignore` (`node_modules/`, `dist/`).
+- [ ] **Task 1: Vite + React + TypeScript + ESLint + PWA Scaffold & Contracts (`VC-01`, `VC-03`, `CI-02`)**
+  - Create `package.json`, `tsconfig.json`, `eslint.config.js`, `vite.config.ts` (React 19, TypeScript, Tailwind CSS, ESLint 9 + `typescript-eslint`, `@vitejs/plugin-basic-ssl`, `vite-plugin-pwa`, `vitest`), and `.gitignore` (`node_modules/`, `dist/`).
   - Create `src/contracts.ts`: `DriverState` type, `MotorTelemetry` & `CalibrationData` interfaces, and `HubAdapter` interface.
-  - Verify: `npm test` (`tests/contracts.test.ts`)
+  - Verify: `npm run lint && npm test` (`tests/contracts.test.ts`)
 
 - [ ] **Task 2: LWP3 Packet Codec, `WebBleHubAdapter` & `MockHubAdapter` (`VC-01`, `VC-02`, `VC-03`)**
   - Create `src/lwp3.ts`: pure functions to encode/decode LEGO Wireless Protocol v3 GATT bytes (Attached I/O `0x04`, Port Input Format Setup `0x41`, Port Value `0x45` for encoders & Hub Temp Port `0x3D`, all Hub Properties `0x01` `0x01..0x0D`, StartSpeed `0x07`, GoToAbsolutePosition `0x0D`, SetHubLed `0x51`).

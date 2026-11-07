@@ -1,0 +1,48 @@
+name: CI Quality Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enforce Markdown Line Caps (CI-01)
+        run: |
+          check_cap() {
+            local file="$1"
+            local cap="$2"
+            local lines
+            lines=$(wc -l < "$file" | tr -d ' ')
+            echo "$file: $lines / $cap lines"
+            if [ "$lines" -gt "$cap" ]; then
+              echo "::error file=$file::$file has $lines lines (exceeds cap of $cap)"
+              exit 1
+            fi
+          }
+          check_cap "docs/SPEC.md" 80
+          check_cap "docs/STATUS.md" 30
+          for spec in docs/specs/*.md; do
+            check_cap "$spec" 80
+          done
+
+      - name: Setup Node.js 20
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install, Lint, Test & Build (CI-02, CI-03)
+        if: hashFiles('package.json') != ''
+        run: |
+          npm ci
+          npm run lint
+          npm test
+          npm run build
