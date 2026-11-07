@@ -64,8 +64,8 @@
 
 | Milestone | Domain Spec | Scope |
 | :--- | :--- | :--- |
-| **M1: Vehicle Control & Calibration** | [`docs/specs/vehicle-control.md`](specs/vehicle-control.md) | WebBLE LWP3 driver, steering/speed calibration, progressive braking, React SPA shell (`Connect`, `Calibrate`, `Debug`) |
-| **M2: Mobile Cockpit UI & Teleop** | `docs/specs/mobile-web-ui.md` *(future)* | `Drive` view: touch & device-tilt steering/throttle HUD, live telemetry gauges |
+| **M1: Vehicle Control & Calibration** | [`vehicle-control.md`](specs/vehicle-control.md), [`mobile-web-ui.md`](specs/mobile-web-ui.md) | WebBLE LWP3 driver, steering/speed calibration, progressive braking, React SPA shell (`Connect`, `Calibrate`, `Debug`) |
+| **M2: Mobile Cockpit UI & Teleop** | [`docs/specs/mobile-web-ui.md`](specs/mobile-web-ui.md) | `Drive` view: touch & device-tilt steering/throttle HUD, live telemetry gauges |
 | **M3: Autonomous Driving Maneuvers** | `docs/specs/driving-maneuvers.md` *(future)* | Parallel parking, 3-point turn & skills via wheel encoders + Hub IMU |
 | **M4: Sensor Pod & Obstacle Avoidance** | `docs/specs/sensor-pod.md` *(future)* | Wi-Fi camera/distance stream to browser, reflex braking layer |
 | **M5: Vision & Target Following** | `docs/specs/vision-autonomy.md` *(future)* | In-browser object/person tracking (MediaPipe/WebGPU), closed-loop PID following |
