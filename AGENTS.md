@@ -1,4 +1,4 @@
-# Project Context & Agentic SDD Rules (`ctrl-plus-plus`)
+# Project Context & Agentic SDD Rules (`Ctrl++`)
 
 This project uses **AI-Native Spec-Driven Development (SDD)** with an **Autonomous Product Manager (PM) + Sub-Agent Workflow**.
 

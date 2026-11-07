@@ -1,4 +1,4 @@
-# `ctrl-plus-plus` — Living System Specification
+# `Ctrl++` — Living System Specification
 
 - **Status:** v0.3 (Serverless React SPA + Offline PWA Architecture)
 - **Last Updated:** 2026-11-07
@@ -7,7 +7,7 @@
 
 ## 1. Overview & Vision
 
-`ctrl-plus-plus` adds autonomous driving capabilities on top of a **stock Lego Technic RC car** without cutting wires or modifying the stock Lego drivetrain. By combining the stock Lego Bluetooth Low Energy (BLE) Hub with an attachable wireless camera/sensor micro-board and a **100% client-side Mobile Web App (PWA)**, the car gains:
+`Ctrl++` adds autonomous driving capabilities on top of a **stock Lego Technic RC car** without cutting wires or modifying the stock Lego drivetrain. By combining the stock Lego Bluetooth Low Energy (BLE) Hub with an attachable wireless camera/sensor micro-board and a **100% client-side Mobile Web App (PWA)**, the car gains:
 1. **Calibrated Speed & Steering Control** (closed-loop control & manual override)
 2. **Environment Awareness & Obstacle Avoidance** (automatic braking / evasive steering)
 3. **Visual Target Following** (tracking and following a target such as a person)
