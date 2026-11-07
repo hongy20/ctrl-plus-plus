@@ -18,7 +18,6 @@ The official **LEGO Control+** and **Powered Up** apps for the **42124 Off-Road 
 ## 🚀 Quick Start
 ```bash
 npm install
-npm test                  # Run unit & mock-hub tests
 npm run dev -- --host     # Serve over local HTTPS for Android Chrome
 ```
 1. Open `https://<mac-ip>:5173` in **Android Chrome** and tap **"Add to Home Screen"** (caches the app offline so you don't need a laptop running).
@@ -26,9 +25,11 @@ npm run dev -- --host     # Serve over local HTTPS for Android Chrome
 
 ## 🧠 SDLC (Software Development Life Cycle)
 
-This project uses an **AI-Native Spec-Driven & Multi-Agent SDLC** designed to eliminate "vibe coding" and context drift across sessions:
+This project adopts **AI-Native Spec-Driven Development (SDD)**—a methodology where structured specifications (not ad-hoc chat prompts or manual coding) are the single source of truth, and a team of AI agents handles the entire engineering lifecycle from spec auditing to TDD implementation and CI verification:
 
-1. **Proactive PM & Just-in-Time EARS Specs:** Instead of maintaining a giant monolithic document, a **Lead PM Agent** co-designs concise domain specs ([`docs/specs/`](docs/specs/)) using 1-line **EARS (`WHEN ... THE ... SHALL ...`)** rules and state machines right before each milestone, audited by a **Spec-Auditor Sub-Agent**.
-2. **Sub-Agent TDD Execution:** Once a spec PR is approved and merged, **Implementer** and **Reviewer Sub-Agents** execute atomic Red-Green-Refactor TDD tasks ([`docs/plans/`](docs/plans/)) against mock hardware interfaces (`MockHubAdapter`) before touching the physical car.
+1. **Proactive PM & Just-in-Time EARS Specs:** A **Lead PM Agent** co-designs concise domain specs ([`docs/specs/`](docs/specs/)) using 1-line **EARS (`WHEN ... THE ... SHALL ...`)** rules and state machines right before each milestone, verified by a **Spec-Auditor Sub-Agent**.
+2. **Autonomous Sub-Agent TDD Execution:** Once a spec PR is approved, **Implementer** and **Reviewer Sub-Agents** execute atomic Red-Green-Refactor TDD tasks ([`docs/plans/`](docs/plans/)) against mock hardware interfaces (`MockHubAdapter`) before any physical floor run.
 3. **Automated CI & Anti-Bloat Gates:** Every PR is gated by GitHub Actions ([`docs/specs/ci-cd.md`](docs/specs/ci-cd.md)) enforcing strict Markdown line caps (`wc -l`), linting (`ESLint` + `tsc`), unit tests (`vitest`), and production builds.
-4. **Repo as Persistent Memory:** [`AGENTS.md`](AGENTS.md), [`docs/SPEC.md`](docs/SPEC.md), and [`docs/STATUS.md`](docs/STATUS.md) store all architectural decisions and session handoff state so any AI agent can resume work immediately.
+4. **Repo as Persistent Memory:** [`AGENTS.md`](AGENTS.md), [`docs/SPEC.md`](docs/SPEC.md), and [`docs/STATUS.md`](docs/STATUS.md) store all architectural decisions and session handoff state so any AI agent can resume work immediately without context loss.
+
+*In other words, I don't expect to touch any source code from this project.*
