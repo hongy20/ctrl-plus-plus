@@ -1,4 +1,4 @@
-# Project Context & Agentic SDD Rules (`lego-autopilot`)
+# Project Context & Agentic SDD Rules (`ctrl-plus-plus`)
 
 This project uses **AI-Native Spec-Driven Development (SDD)** with an **Autonomous Product Manager (PM) + Sub-Agent Workflow**.
 
