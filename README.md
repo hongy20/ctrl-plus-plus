@@ -1,4 +1,4 @@
-# 🏎️ Ctrl++
+# 🎮 Ctrl++
 
 The official **LEGO Control+** and **Powered Up** apps for remote-controlled vehicles offer a frustrating driving experience: on-screen touch sliders lack tactile feedback, holding a steady cruising speed is difficult, and braking is strictly **all-or-nothing**—lifting your thumb or hitting the brake either lets the car coast freely or locks the wheels with an abrupt jerk instead of slowing down smoothly like a real car.
 

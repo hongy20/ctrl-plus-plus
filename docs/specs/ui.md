@@ -1,6 +1,6 @@
-# Domain Spec: Mobile Web App Shell, Lifecycle & Views (`mobile-web-ui`)
+# Domain Spec: Mobile Web App Shell, Lifecycle & Views (`ui`)
 
-- **Status:** Approved v1.0 (M1 Shell & Debug Views; M2 Cockpit Pending)
+- **Status:** Approved v1.1 (M1 Shell, Connect->Calibrate Onboarding & Debug Views; M2 Cockpit Pending)
 - **Stack:** React 19 + TypeScript + Tailwind CSS + Vite (`vite-plugin-pwa`, `@vitejs/plugin-basic-ssl`, Screen Wake Lock API, Page Visibility API)
 
 ---
@@ -11,7 +11,7 @@
 [App Mounted] ──► Request Screen Wake Lock (UI-02)
       │
       ├──► Persistent Top Bar: [BLE Status] + [Battery %] + [Temp °C] + [E-STOP / Resume] (UI-01)
-      ├──► Client-Side Views:  [Connect] ◄──► [Calibrate] ◄──► [Debug] (M1) ◄──► [Drive] (M2)
+      ├──► Client-Side Views:  [Connect] ──("Tweak / Calibrate")──► [Calibrate] ◄──► [Debug] (M1)
       │
       └──► On visibilityState === 'hidden' / pagehide:
            emergencyStop() ──► disconnect() (BLE GATT close) (UI-03)
@@ -29,9 +29,9 @@
 - **UI-03:** `WHEN the page leaves the foreground or unloads (document.visibilityState === 'hidden' or pagehide), THE App SHALL synchronously invoke emergencyStop() and disconnect() so the LEGO Hub hardware fail-safe engages immediately.`
 
 ### M1 Views (`Connect`, `Calibrate`, `Debug`)
-- **UI-04:** `WHILE on the Connect tab, THE UI SHALL display (a) the active WebBLE connection controls and inline Hub Name editor (LWP3 Property 0x01), and (b) a Remembered Hubs manager listing all hubs saved in localStorage (name, hubId/MAC, last connected, calibration summary) with actions to Forget Hub (delete from localStorage) or Reset Calibration.`
-- **UI-05:** `WHILE on the Calibrate tab, THE UI SHALL provide touch controls for (a) Auto-Calibrate Steering Limits and (b) 2-Step 1m Speed Calibration (Start Test Run button + Measured Distance (m) input + Save kCal button).`
-- **UI-06:** `WHILE on the Debug tab, THE UI SHALL provide touch controls for Forward/Reverse speed presets, Steer Left/Center/Right slider, Progressive Brake button, live Port A/B encoder telemetry, and a live inspector log of all LWP3 Hub Properties and Attached I/O ports.`
+- **UI-04:** `WHILE on the Connect tab, THE UI SHALL (a) provide WebBLE connection controls and inline Hub Name editing (CTL-02), (b) upon connection, display the loaded HubProfile (STR-01: LEGO Set preset, steering/speed calibration status, wheel Ø, brake intensity) with a "Tweak / Calibrate" CTA that navigates directly to the Calibrate tab, and (c) list Remembered Hubs from localStorage with Forget Hub and Reset Calibration actions (STR-04).`
+- **UI-05:** `WHILE on the Calibrate tab, THE UI SHALL provide controls to (a) select the Official Vehicle Profile preset (PRF-01, default: "42124 Off-Road Buggy"), (b) run Auto-Calibrate Steering Limits (CAL-01) and 2-Step 1m Speed Calibration (CAL-03), and (c) manually tweak per-hub parameters (STR-03: Wheel Diameter mm, Steering Clamp %, Default Brake Intensity).`
+- **UI-06:** `WHILE on the Debug tab, THE UI SHALL provide touch controls for Forward/Reverse speed presets, Steer Left/Center/Right slider, Progressive Brake button, live Port A/B encoder telemetry, and a live inspector log of all LEGO Wireless Protocol Hub Properties and Attached I/O ports.`
 
 ### M2 Views (`Drive` Cockpit — Planned for Milestone 2)
 - *To be specified in Milestone 2: Device-orientation (tilt) steering/throttle HUD and dual-thumb touch pedals.*
@@ -39,5 +39,5 @@
 ---
 
 ## 3. Verification Plan
-1. **Unit / Component Tests (`tests/*.test.ts`):** Verify Screen Wake Lock acquisition/re-acquisition (`UI-02`), synchronous `emergencyStop() + disconnect()` on `visibilitychange` (`hidden`) / `pagehide` (`UI-03`), and tab switching preserving `VehicleDriver` state (`UI-01`).
+1. **Unit / Component Tests (`tests/ui.test.ts`):** Verify Screen Wake Lock acquisition/re-acquisition (`UI-02`), synchronous `emergencyStop() + disconnect()` on `visibilitychange` (`hidden`) / `pagehide` (`UI-03`), and Connect → **Tweak / Calibrate** navigation preserving `VehicleDriver` state (`UI-01`, `UI-04`, `UI-05`).
 2. **Android Chrome PWA Test:** Verify offline PWA install, screen stays awake while idle, switching tabs keeps BLE connected, and locking/backgrounding the phone immediately disconnects BLE and stops the car.

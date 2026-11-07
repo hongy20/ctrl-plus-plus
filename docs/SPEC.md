@@ -27,8 +27,8 @@
 │  │  - Internal IMU / Tilt  │  └──────────┬───────────┘  │
 │  └────────────▲────────────┘             │              │
 └───────────────┼──────────────────────────┼──────────────┘
-                │ Web Bluetooth (LWP3)     │ Wi-Fi (WS / MJPEG)
-                ▼                          ▼
+                │ Web Bluetooth (LEGO Wireless Protocol) │ Wi-Fi (WS / MJPEG)
+                ▼                                        ▼
 ┌─────────────────────────────────────────────────────────┐
 │       REACT SPA / OFFLINE PWA (Android Chrome)          │
 │  - Shared VehicleDriver Singleton + Persistent E-STOP   │
@@ -39,7 +39,7 @@
 
 ### Component Boundaries
 1. **Vehicle Actuation Subsystem (Lego Control+ / Powered Up BLE Hub):**
-   - Receives drive speed and steering angle commands over BLE (LWP3 Service `00001623-1212-efde-1623-785feabcd123`).
+   - Receives drive speed and steering angle commands over BLE (LEGO Wireless Protocol Service `00001623-1212-efde-1623-785feabcd123`).
    - Emits motor encoder telemetry, battery status, and hub IMU (tilt/gyro/accel) readings.
 2. **On-Vehicle Perception Pod (Attachable Micro-Board + Sensors):**
    - Mounted non-destructively onto the Lego chassis with its own lightweight battery.
@@ -54,9 +54,9 @@
 
 | ID | Decision | Rationale | Status |
 | :--- | :--- | :--- | :--- |
-| **ADR-001** | Use stock **Lego Technic Control+ BLE Hub** (`88012`) for motor control | Avoids custom motor drivers or hardware modification; communicates via standard LWP3 GATT service and reads built-in motor encoders & IMU. | ✅ Locked |
+| **ADR-001** | Use stock **Lego Technic Control+ BLE Hub** (`88012`) for motor control | Avoids custom motor drivers or hardware modification; communicates via standard LEGO Wireless Protocol GATT service and reads built-in motor encoders & IMU. | ✅ Locked |
 | **ADR-002** | **React + TypeScript SPA & Offline PWA** via Web Bluetooth | Client-side navigation keeps WebBLE alive across screens; `vite-plugin-pwa` caches the app on Android so no MacBook or public server is needed. | ✅ Locked |
-| **ADR-003** | Simulation / Mock-first interfaces | Hardware testing is slow; strict TypeScript contracts (`HubAdapter`, `VehicleDriver`) allow testing LWP3 packet encoding and control loops in `vitest`. | ✅ Locked |
+| **ADR-003** | Simulation / Mock-first interfaces | Hardware testing is slow; strict TypeScript contracts (`HubAdapter`, `VehicleDriver`) allow testing LEGO Wireless Protocol packet encoding and control loops in `vitest`. | ✅ Locked |
 
 ---
 
@@ -64,11 +64,11 @@
 
 | Milestone | Domain Spec | Scope |
 | :--- | :--- | :--- |
-| **M1: Vehicle Control & Calibration** | [`vehicle-control.md`](specs/vehicle-control.md), [`mobile-web-ui.md`](specs/mobile-web-ui.md) | WebBLE LWP3 driver, steering/speed calibration, progressive braking, React SPA shell (`Connect`, `Calibrate`, `Debug`) |
-| **M2: Mobile Cockpit UI & Teleop** | [`docs/specs/mobile-web-ui.md`](specs/mobile-web-ui.md) | `Drive` view: touch & device-tilt steering/throttle HUD, live telemetry gauges |
-| **M3: Autonomous Driving Maneuvers** | `docs/specs/driving-maneuvers.md` *(future)* | Parallel parking, 3-point turn & skills via wheel encoders + Hub IMU |
-| **M4: Sensor Pod & Obstacle Avoidance** | `docs/specs/sensor-pod.md` *(future)* | Wi-Fi camera/distance stream to browser, reflex braking layer |
-| **M5: Vision & Target Following** | `docs/specs/vision-autonomy.md` *(future)* | In-browser object/person tracking (MediaPipe/WebGPU), closed-loop PID following |
+| **M1: Vehicle Control & Calibration** | [`profile.md`](specs/profile.md), [`storage.md`](specs/storage.md), [`calibration.md`](specs/calibration.md), [`control.md`](specs/control.md), [`ui.md`](specs/ui.md) | Official LEGO set profiles, per-hub storage, steering/speed calibration, LEGO Wireless Protocol BLE control & progressive braking, React SPA shell |
+| **M2: Mobile Cockpit UI & Teleop** | [`ui.md`](specs/ui.md) | `Drive` view: touch & device-tilt steering/throttle HUD, live telemetry gauges |
+| **M3: Autonomous Driving Maneuvers** | `maneuvers.md` *(future)* | Parallel parking, 3-point turn & skills via wheel encoders + Hub IMU |
+| **M4: Sensor Pod & Obstacle Avoidance** | `sensor.md` *(future)* | Wi-Fi camera/distance stream to browser, reflex braking layer |
+| **M5: Vision & Target Following** | `vision.md` *(future)* | In-browser object/person tracking (MediaPipe/WebGPU), closed-loop PID following |
 
 ---
 
