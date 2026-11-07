@@ -1,4 +1,4 @@
-# Project Status & Session Handoff (`lego-autopilot`)
+# Project Status & Session Handoff (`ctrl-plus-plus`)
 
 - **Active Milestone:** Milestone 1 — Web Bluetooth Vehicle Control & Speed Calibration
 - **Active Specs:** [`docs/specs/vehicle-control.md`](specs/vehicle-control.md) (v2.4), [`docs/specs/mobile-web-ui.md`](specs/mobile-web-ui.md) (v1.0)
