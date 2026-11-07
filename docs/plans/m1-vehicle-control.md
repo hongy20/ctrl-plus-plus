@@ -10,16 +10,16 @@
   - Verify: `npm test` (`tests/contracts.test.ts`)
 
 - [ ] **Task 2: LWP3 Packet Codec, `WebBleHubAdapter` & `MockHubAdapter` (`VC-01`, `VC-02`, `VC-03`)**
-  - Create `src/lwp3.ts`: pure functions to encode/decode LEGO Wireless Protocol v3 GATT bytes (Port Input Format Setup `0x41`, Port Value `0x45`, Hub Property Battery `0x01`/`0x06`, StartSpeed `0x07`, GoToAbsolutePosition `0x0D`, SetHubLed `0x51`).
-  - Create `src/hub-adapter.ts`: `WebBleHubAdapter` using `navigator.bluetooth.requestDevice()` (UUID `00001623-1212-efde-1623-785feabcd123`) and `MockHubAdapter` for unit tests.
+  - Create `src/lwp3.ts`: pure functions to encode/decode LEGO Wireless Protocol v3 GATT bytes (Attached I/O `0x04`, Port Input Format Setup `0x41`, Port Value `0x45` for encoders & Hub Temp Port `0x3D`, all Hub Properties `0x01` `0x01..0x0D`, StartSpeed `0x07`, GoToAbsolutePosition `0x0D`, SetHubLed `0x51`).
+  - Create `src/hub-adapter.ts`: `WebBleHubAdapter` using `navigator.bluetooth.requestDevice()` (UUID `00001623-1212-efde-1623-785feabcd123`), logging all discovered Hub properties/ports, and `MockHubAdapter` for unit tests.
   - Verify: `npm test` (`tests/lwp3-adapter.test.ts`)
 
-- [ ] **Task 3: Steering Auto-Homing & Clamping (`VC-04`, `VC-05`, `VC-06`)**
-  - Create `src/vehicle-driver.ts`: implement `calibrateSteering()` (left/right stall detection `|deg/s| < 5` for `250ms`, `center = (left + right) / 2`, 90% range clamp, `localStorage` load/save) and `setSteering(norm)`.
+- [ ] **Task 3: Steering Auto-Homing & Per-Hub Clamping (`VC-04`, `VC-05`, `VC-06`)**
+  - Create `src/vehicle-driver.ts`: implement `calibrateSteering()` (left/right stall detection `|deg/s| < 5` for `250ms`, `center = (left + right) / 2`, 90% range clamp, per-`hubId` `localStorage` load/save) and `setSteering(norm)`.
   - Verify: `npm test` (`tests/steering.test.ts`)
 
 - [ ] **Task 4: Speed Calibration & Progressive Braking (`VC-07`, `VC-08`, `VC-09`)**
-  - Add `setSpeed(targetMps)` (`Tire Ø = 71.6mm`, `Port A` CCW forward), 2-step `startSpeedCalRun()` + `saveSpeedCal(measuredMeters)` with `localStorage` `kCal`, and `brake(intensity)` 20 Hz deceleration ramp + low-speed hold.
+  - Add `setSpeed(targetMps)` (`Tire Ø = 71.6mm`, `Port A` CCW forward), 2-step `startSpeedCalRun()` + `saveSpeedCal(measuredMeters)` with per-`hubId` `localStorage` `kCal`, and `brake(intensity)` 20 Hz deceleration ramp + low-speed hold.
   - Verify: `npm test` (`tests/speed-brake.test.ts`)
 
 - [ ] **Task 5: Vehicle Watchdog & Mobile Lifecycle Guards (`VC-10`, `VC-11`, `UI-02`, `UI-03`)**
