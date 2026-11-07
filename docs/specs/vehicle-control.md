@@ -29,7 +29,7 @@
 
 ### Steering Calibration & Control
 - **VC-04:** `WHEN calibrateSteering() runs, THE VehicleDriver SHALL enter CALIBRATING, drive Port B at low power until stall (|deg/s| < 5 for 250ms) in both directions to record leftLimit and rightLimit, and return to READY.`
-- **VC-05:** `WHEN both steering limits are found, THE VehicleDriver SHALL set centerPos = (leftLimit + rightLimit) / 2, clamp future steering targets to 90% of [leftLimit, rightLimit], and persist calibration in localStorage keyed by hubId.`
+- **VC-05:** `WHEN both steering limits are found, THE VehicleDriver SHALL set centerPos = (leftLimit + rightLimit) / 2, clamp future steering targets to 90% of [leftLimit, rightLimit], and persist the Hub profile (hubId, name, lastConnectedAt, calibration) in localStorage (with listRememberedHubs() and forgetHub(hubId) management helpers).`
 - **VC-06:** `WHEN setSteering(angleNorm) is called with [-1.0, +1.0], THE VehicleDriver SHALL command Port B (LWP3 GoToAbsolutePosition 0x0D) to the mapped encoder angle.`
 
 ### Speed Calibration, Control & Realistic Braking

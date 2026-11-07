@@ -29,7 +29,7 @@
 - **UI-03:** `WHEN the page leaves the foreground or unloads (document.visibilityState === 'hidden' or pagehide), THE App SHALL synchronously invoke emergencyStop() and disconnect() so the LEGO Hub hardware fail-safe engages immediately.`
 
 ### M1 Views (`Connect`, `Calibrate`, `Debug`)
-- **UI-04:** `WHILE on the Connect tab, THE UI SHALL display a Connect LEGO Hub (WebBLE) button, the connected Hub's unique MAC Address / hubId, an inline Hub Name editor (LWP3 Property 0x01), and the calibration profile loaded for that hubId.`
+- **UI-04:** `WHILE on the Connect tab, THE UI SHALL display (a) the active WebBLE connection controls and inline Hub Name editor (LWP3 Property 0x01), and (b) a Remembered Hubs manager listing all hubs saved in localStorage (name, hubId/MAC, last connected, calibration summary) with actions to Forget Hub (delete from localStorage) or Reset Calibration.`
 - **UI-05:** `WHILE on the Calibrate tab, THE UI SHALL provide touch controls for (a) Auto-Calibrate Steering Limits and (b) 2-Step 1m Speed Calibration (Start Test Run button + Measured Distance (m) input + Save kCal button).`
 - **UI-06:** `WHILE on the Debug tab, THE UI SHALL provide touch controls for Forward/Reverse speed presets, Steer Left/Center/Right slider, Progressive Brake button, live Port A/B encoder telemetry, and a live inspector log of all LWP3 Hub Properties and Attached I/O ports.`
 

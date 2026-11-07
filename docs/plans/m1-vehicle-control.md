@@ -14,8 +14,8 @@
   - Create `src/hub-adapter.ts`: `WebBleHubAdapter` using `navigator.bluetooth.requestDevice()` (UUID `00001623-1212-efde-1623-785feabcd123`), logging all discovered Hub properties/ports, and `MockHubAdapter` for unit tests.
   - Verify: `npm test` (`tests/lwp3-adapter.test.ts`)
 
-- [ ] **Task 3: Steering Auto-Homing & Per-Hub Clamping (`VC-04`, `VC-05`, `VC-06`)**
-  - Create `src/vehicle-driver.ts`: implement `calibrateSteering()` (left/right stall detection `|deg/s| < 5` for `250ms`, `center = (left + right) / 2`, 90% range clamp, per-`hubId` `localStorage` load/save) and `setSteering(norm)`.
+- [ ] **Task 3: Steering Auto-Homing & Per-Hub Storage Manager (`VC-04`, `VC-05`, `VC-06`)**
+  - Create `src/hub-storage.ts` & `src/vehicle-driver.ts`: implement per-`hubId` `localStorage` registry (`listRememberedHubs()`, `saveHubProfile()`, `forgetHub(hubId)`, `resetHubCalibration(hubId)`), `calibrateSteering()` (`|deg/s| < 5` for `250ms`, 90% clamp), and `setSteering(norm)`.
   - Verify: `npm test` (`tests/steering.test.ts`)
 
 - [ ] **Task 4: Speed Calibration & Progressive Braking (`VC-07`, `VC-08`, `VC-09`)**
@@ -27,5 +27,5 @@
   - Verify: `npm test` (`tests/safety.test.ts`)
 
 - [ ] **Task 6: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`UI-01`, `UI-04`, `UI-05`, `UI-06`)**
-  - Build React SPA with shared `VehicleDriver` context, persistent top status + **E-STOP / Resume** bar, and bottom tab navigation (`Connect`, `Calibrate`, `Debug`).
+  - Build React SPA with shared `VehicleDriver` context, persistent top status + Battery `%` + Temp `°C` + **E-STOP / Resume** bar, and bottom tab navigation (`Connect` with Remembered Hubs manager / Forget Device / Rename, `Calibrate`, `Debug`).
   - Verify: `npm test && npm run build`.
