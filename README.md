@@ -9,7 +9,7 @@ The official **LEGO Control+** and **Powered Up** apps for remote-controlled veh
 
 ## 🛠️ Hardware
 
-Currently, I only test this project on my stock **[LEGO Technic 42124 Off-Road Buggy](https://www.lego.com/en-us/product/off-road-buggy-42124)** (with zero hardware or wiring modifications):
+**Ctrl++** supports any LEGO vehicle powered by a **LEGO Powered Up / Control+ Bluetooth Hub** through built-in vehicle profiles and customizable port/wheel settings. I use my stock **[LEGO Technic 42124 Off-Road Buggy](https://www.lego.com/en-us/product/off-road-buggy-42124)** (with zero hardware or wiring modifications) for debugging and testing:
 
 <p align="center">
   <img src="https://cdn.rebrickable.com/media/sets/42124-1.jpg" alt="LEGO Technic 42124 Off-Road Buggy" width="420" />
@@ -21,7 +21,7 @@ npm install
 npm run dev -- --host     # Serve over local HTTPS for Android Chrome
 ```
 1. Open `https://<mac-ip>:5173` in **Android Chrome** and tap **"Add to Home Screen"** (caches the app offline so you don't need a laptop running).
-2. Turn on the LEGO Technic Hub, tap **Connect**, and run **Steering & 1m Speed Calibration**.
+2. Turn on your LEGO Hub, tap **Connect**, choose your vehicle profile (default: **42124 Off-Road Buggy**), and run **Steering & Speed Calibration**.
 
 ## 🧠 SDLC (Software Development Life Cycle)
 
