@@ -1,8 +1,8 @@
-# 🏎️ ctrl-plus-plus
+# 🏎️ Ctrl++
 
 The official **LEGO Control+** and **Powered Up** apps for remote-controlled vehicles offer a frustrating driving experience: on-screen touch sliders lack tactile feedback, holding a steady cruising speed is difficult, and braking is strictly **all-or-nothing**—lifting your thumb or hitting the brake either lets the car coast freely or locks the wheels with an abrupt jerk instead of slowing down smoothly like a real car.
 
-`ctrl-plus-plus` replaces the stock app with a direct **Mobile Web** controller and autopilot running right in your phone's browser:
+**Ctrl++** replaces the stock app with a direct **Mobile Web** controller and autopilot running right in your phone's browser:
 - **Realistic Driving & Smooth Braking:** Tilt your phone to steer, hold steady cruising speeds, and slow down smoothly with progressive braking.
 - **Automated Driving Tricks:** Execute one-tap stunts and maneuvers like **parallel parking**, **3-point turns**, and **U-turns** using the car's built-in sensors.
 - **First-Person Camera & Home Racing (Future):** Mount a lightweight wireless camera to build mixed-reality living-room racing games inspired by ***Mario Kart Live: Home Circuit***.
