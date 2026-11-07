@@ -38,9 +38,11 @@
 - **VC-11:** `WHEN brake(intensity) is called with [0.0, 1.0], THE VehicleDriver SHALL ramp speed down at 20 Hz along a smooth deceleration curve (a = intensity * aMax) and engage LWP3 hold-brake (127) only when |speed| < 0.05 m/s.`
 
 ### Safety, Fail-Safe & Multi-View SPA Shell
-- **VC-08:** `WHEN BLE disconnects (gattserverdisconnected), the page is backgrounded (visibilitychange), or telemetry lags > 200ms while driving, THE VehicleDriver SHALL transition to EMERGENCY_STOP and cut motor power to 0.`
+- **VC-08:** `WHEN BLE disconnects (gattserverdisconnected) or telemetry lags > 200ms while driving, THE VehicleDriver SHALL transition to EMERGENCY_STOP and cut motor power to 0.`
+- **VC-14:** `WHEN the page is backgrounded or unloaded (visibilityState === 'hidden' or pagehide), THE VehicleDriver SHALL immediately command motor power to 0 and disconnect BLE (gatt.disconnect()) so the Hub hardware fail-safe engages.`
 - **VC-09:** `WHEN the user taps the persistent top-bar E-STOP button, THE VehicleDriver SHALL immediately command brake/coast (power = 0) on Ports A and B; WHEN resetEmergencyStop() is called while BLE is connected, IT SHALL return to READY.`
 - **VC-10:** `WHILE navigating between SPA tabs (Connect, Calibrate, Debug) without page reload, THE App SHALL preserve the active VehicleDriver session and keep the global status + E-STOP header visible.`
+- **VC-13:** `WHILE connected to the hub (or active in the app), THE App SHALL hold a Screen Wake Lock (navigator.wakeLock.request('screen')) and re-acquire it on visibility restore so the mobile screen never dims or sleeps.`
 
 ---
 

@@ -22,8 +22,8 @@
   - Add `setSpeed(targetMps)` (`Tire Ø = 71.6mm`, `Port A` CCW forward), 2-step `startSpeedCalRun()` + `saveSpeedCal(measuredMeters)` with `localStorage` `kCal`, and `brake(intensity)` 20 Hz deceleration ramp + low-speed hold.
   - Verify: `npm test` (`tests/speed-brake.test.ts`)
 
-- [ ] **Task 5: Dead-Man Watchdog & Emergency Stop (`VC-08`, `VC-09`)**
-  - Add `200ms` telemetry/disconnect/visibility watchdog (`EMERGENCY_STOP` → power `0`), immediate `emergencyStop()`, and `resetEmergencyStop()`.
+- [ ] **Task 5: Dead-Man Watchdog, Background BLE Disconnect & Wake Lock (`VC-08`, `VC-09`, `VC-13`, `VC-14`)**
+  - Add `200ms` telemetry/disconnect watchdog (`EMERGENCY_STOP` → power `0`), immediate motor stop + `gatt.disconnect()` on `visibilitychange` (`hidden`) / `pagehide`, `emergencyStop()` / `resetEmergencyStop()`, and Screen Wake Lock (`navigator.wakeLock.request('screen')`).
   - Verify: `npm test` (`tests/safety.test.ts`)
 
 - [ ] **Task 6: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`VC-10`)**
