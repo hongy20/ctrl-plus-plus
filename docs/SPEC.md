@@ -54,7 +54,7 @@
 
 | ID | Decision | Rationale | Status |
 | :--- | :--- | :--- | :--- |
-| **ADR-001** | Use stock **Lego Technic Control+ BLE Hub** (`88012`) for motor control | Avoids custom motor drivers or hardware modification; communicates via standard LEGO Wireless Protocol GATT service and reads built-in motor encoders & IMU. | ✅ Locked |
+| **ADR-001** | Support **LEGO Powered Up / Control+ BLE Hubs** via LEGO Wireless Protocol | Avoids custom motor drivers or hardware modification; communicates via standard LEGO Wireless Protocol GATT service and reads built-in motor encoders & IMU. | ✅ Locked |
 | **ADR-002** | **React + TypeScript SPA & Offline PWA** via Web Bluetooth | Client-side navigation keeps WebBLE alive across screens; `vite-plugin-pwa` caches the app on Android so no MacBook or public server is needed. | ✅ Locked |
 | **ADR-003** | Simulation / Mock-first interfaces | Hardware testing is slow; strict TypeScript contracts (`HubAdapter`, `VehicleDriver`) allow testing LEGO Wireless Protocol packet encoding and control loops in `vitest`. | ✅ Locked |
 
@@ -73,7 +73,7 @@
 ---
 
 ## 5. Locked Hardware & Stack Decisions (Formerly TBDs)
-- [x] **TBD-1 (Lego Car & Ports):** LEGO Technic **42124 Off-Road Buggy** (`TechnicHub 88012`, Tire Ø `71.6mm`; **Port A** = Drive CCW, **Port B** = Steering).
+- [x] **TBD-1 (Supported Vehicles & Reference Rig):** Any LEGO vehicle with a **Powered Up / Control+ Hub** via [`docs/specs/profile.md`](specs/profile.md); primary test/debug vehicle is **42124 Off-Road Buggy** (`TechnicHub 88012`, Tire Ø `71.6mm`, Port A Drive CCW, Port B Steer).
 - [x] **TBD-3 (Stack & Hosting):** **React 19 + TypeScript + Tailwind CSS + Vite** (`dist/` git-ignored), `@vitejs/plugin-basic-ssl` + `vite-plugin-pwa` for offline Android install (GitHub Pages ready when repo goes public), `vitest` for tests.
 - [x] **TBD-4 (Speed Calibration):** Encoder `deg/s` + wheel circumference + `k_cal` correction factor verified via 1-meter floor run.
 - [ ] **TBD-2 (Micro-Board & Sensor Selection — Deferred to M4):** Select Wi-Fi camera/sensor board and range sensor before Milestone 4.

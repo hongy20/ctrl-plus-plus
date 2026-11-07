@@ -31,7 +31,7 @@
 ### M1 Views (`Connect`, `Calibrate`, `Debug`)
 - **UI-04:** `WHILE on the Connect tab, THE UI SHALL (a) provide WebBLE connection controls and inline Hub Name editing (CTL-02), (b) upon connection, display the loaded HubProfile (STR-01: LEGO Set preset, steering/speed calibration status, wheel Ø, brake intensity) with a "Tweak / Calibrate" CTA that navigates directly to the Calibrate tab, and (c) list Remembered Hubs from localStorage with Forget Hub and Reset Calibration actions (STR-04).`
 - **UI-05:** `WHILE on the Calibrate tab, THE UI SHALL provide controls to (a) select the Official Vehicle Profile preset (PRF-01, default: "42124 Off-Road Buggy"), (b) run Auto-Calibrate Steering Limits (CAL-01) and 2-Step 1m Speed Calibration (CAL-03), and (c) manually tweak per-hub parameters (STR-03: Wheel Diameter mm, Steering Clamp %, Default Brake Intensity).`
-- **UI-06:** `WHILE on the Debug tab, THE UI SHALL provide touch controls for Forward/Reverse speed presets, Steer Left/Center/Right slider, Progressive Brake button, live Port A/B encoder telemetry, and a live inspector log of all LEGO Wireless Protocol Hub Properties and Attached I/O ports.`
+- **UI-06:** `WHILE on the Debug tab, THE UI SHALL provide touch controls for Forward/Reverse speed presets, Steer Left/Center/Right slider, Progressive Brake button, live drive/steer encoder telemetry, and a live inspector log of all LEGO Wireless Protocol Hub Properties and Attached I/O ports.`
 
 ### M2 Views (`Drive` Cockpit — Planned for Milestone 2)
 - *To be specified in Milestone 2: Device-orientation (tilt) steering/throttle HUD and dual-thumb touch pedals.*

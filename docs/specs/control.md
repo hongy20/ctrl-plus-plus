@@ -22,7 +22,7 @@
 
 ### BLE Transport, Hub Discovery & Telemetry (LEGO Wireless Protocol)
 - **CTL-01:** `WHEN connect() is invoked, THE WebBleHubAdapter SHALL open the browser Web Bluetooth chooser filtered by LEGO Wireless Protocol service UUID (00001623-1212-efde-1623-785feabcd123) and connect to the GATT characteristic (00001624-1212-efde-1623-785feabcd123).`
-- **CTL-02:** `WHEN connected, THE VehicleDriver SHALL set the Hub LED (Port 0x32) to Cyan, query all LEGO Wireless Protocol Hub Properties (0x01..0x0D including MAC Address 0x0D, FW/HW versions, RSSI, Battery Type), subscribe to Port A/B encoders (>= 10 Hz), Hub Temperature (Port 0x3D), and Battery Level (Property 0x06), log Attached I/O ports (0x04), support renaming the Hub in flash via setHubName() (Property 0x01), load the HubProfile (STR-01), and enter READY.`
+- **CTL-02:** `WHEN connected, THE VehicleDriver SHALL set the Hub LED (Port 0x32) to Cyan, query all LEGO Wireless Protocol Hub Properties (0x01..0x0D including MAC Address 0x0D, FW/HW versions, RSSI, Battery Type), load the HubProfile (STR-01), subscribe to the profile's drive and steer port encoders (>= 10 Hz), Hub Temperature (Port 0x3D), and Battery Level (Property 0x06), log Attached I/O ports (0x04), support renaming the Hub in flash via setHubName() (Property 0x01), and enter READY.`
 
 ### Calibration Interlock State
 - **CTL-03:** `WHILE in the CALIBRATING state, THE VehicleDriver SHALL reject standard teleop setSpeed() and setSteering() calls so calibration routines (CAL-01..CAL-03) have exclusive actuator control.`
