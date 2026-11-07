@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Enforce Markdown Line Caps (CI-01)
         run: |
@@ -32,11 +32,11 @@ jobs:
             check_cap "$spec" 80
           done
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js LTS
         if: hashFiles('package.json') != ''
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 'lts/*'
           cache: npm
 
       - name: Install, Lint, Test & Build (CI-02, CI-03)

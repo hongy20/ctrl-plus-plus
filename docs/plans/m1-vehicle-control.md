@@ -1,11 +1,11 @@
 # M1 Implementation Plan: Web Bluetooth Vehicle Control & Speed Calibration
 
-> **Spec References:** [`docs/specs/vehicle-control.md`](../specs/vehicle-control.md) (`VC-01`..`VC-11`), [`docs/specs/mobile-web-ui.md`](../specs/mobile-web-ui.md) (`UI-01`..`UI-06`), [`docs/specs/ci-cd.md`](../specs/ci-cd.md) (`CI-01`..`CI-03`)
+> **Spec References:** [`docs/specs/vehicle-control.md`](../specs/vehicle-control.md) (`VC-01`..`VC-11`), [`docs/specs/mobile-web-ui.md`](../specs/mobile-web-ui.md) (`UI-01`..`UI-06`), [`docs/specs/ci-cd.md`](../specs/ci-cd.md) (`CI-01`..`CI-05`)
 
 ## Tasks (TDD Loop: Failing Test → Minimal Code → Pass → Commit)
 
-- [ ] **Task 1: Vite + React + TypeScript + ESLint + PWA Scaffold & Contracts (`VC-01`, `VC-03`, `CI-02`)**
-  - Create `package.json`, `tsconfig.json`, `eslint.config.js`, `vite.config.ts` (React 19, TypeScript, Tailwind CSS, ESLint 9 + `typescript-eslint`, `@vitejs/plugin-basic-ssl`, `vite-plugin-pwa`, `vitest`), and `.gitignore` (`node_modules/`, `dist/`).
+- [ ] **Task 1: Vite + React + TypeScript + ESLint + PWA Scaffold & Contracts (`VC-01`, `VC-03`, `CI-02`, `CI-05`)**
+  - Create `package.json`, `tsconfig.json`, `eslint.config.js`, `vite.config.ts` using `@latest` production releases verified via `npm view` (React 19.3+, TypeScript 7+, Tailwind CSS 4+, ESLint 10+, Vite 8+, Vitest 5+, `@vitejs/plugin-basic-ssl`, `vite-plugin-pwa`), and `.gitignore` (`node_modules/`, `dist/`).
   - Create `src/contracts.ts`: `DriverState` type, `MotorTelemetry` & `CalibrationData` interfaces, and `HubAdapter` interface.
   - Verify: `npm run lint && npm test` (`tests/contracts.test.ts`)
 

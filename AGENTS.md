@@ -26,3 +26,4 @@ Do **not** passively wait for micro-instructions or leave uncommitted changes ha
   - `docs/plans/<milestone-or-change>.md`: Disposable TDD task checklist for active work.
   - `docs/STATUS.md` (≤ 30 lines): Current state and next step only.
 - **Code Owns Schemas:** Once code exists, TypeScript types (`interface`/`type`) and `vitest` tests own exact data shapes—link to them instead of copying code into Markdown.
+- **Latest Production Versions Only (CRITICAL):** Never use legacy versions from model training memory. Always query live registries (`npm view <pkg> version`, `gh api repos/<owner>/<repo>/releases/latest`) and use the latest production/LTS releases (Node.js 26 LTS / `lts/*`, `actions/checkout@v7`, `actions/setup-node@v7`, `npm install <pkg>@latest`).
