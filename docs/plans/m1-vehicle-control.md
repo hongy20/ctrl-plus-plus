@@ -5,7 +5,7 @@
 ## Tasks (TDD Loop: Failing Test → Minimal Code → Pass → Commit)
 
 - [ ] **Task 1: Vite + React + TypeScript + ESLint + PWA Scaffold & Contracts (`VC-01`, `VC-03`, `CI-02`, `CI-05`)**
-  - Create `package.json`, `tsconfig.json`, `eslint.config.js`, `vite.config.ts` using `@latest` production releases verified via `npm view` (React 19.3+, TypeScript 7+, Tailwind CSS 4+, ESLint 10+, Vite 8+, Vitest 5+, `@vitejs/plugin-basic-ssl`, `vite-plugin-pwa`), and `.gitignore` (`node_modules/`, `dist/`).
+  - Initialize via `npm init -y` and `npm i` / `npm i -D` (React, TypeScript, Tailwind CSS, ESLint + `typescript-eslint`, Vite, `@vitejs/plugin-basic-ssl`, `vite-plugin-pwa`, Vitest), configure `tsconfig.json`, `eslint.config.js`, `vite.config.ts`, and `.gitignore` (`node_modules/`, `dist/`).
   - Create `src/contracts.ts`: `DriverState` type, `MotorTelemetry` & `CalibrationData` interfaces, and `HubAdapter` interface.
   - Verify: `npm run lint && npm test` (`tests/contracts.test.ts`)
 

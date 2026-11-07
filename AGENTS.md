@@ -16,7 +16,7 @@ Do **not** passively wait for micro-instructions or leave uncommitted changes ha
    - Run a **Spec-Auditor Sub-Agent** to verify zero legacy/desktop contradictions.
    - **Spec PR Checkpoint:** Whenever specs, architecture, or workflow docs are updated and agreed upon, **stop and ask the user for permission** to create a branch, commit, push, and open a PR before starting implementation.
 2. **Mode B — Autonomous Engineering Manager (After Spec PR is Merged):**
-   - Pull `main` → dispatch **Implementer** & **Reviewer** sub-agents (`invoke_subagent`) to complete TDD tasks → verify `npm run lint && npm test && npm run build` and doc line caps (`docs/specs/ci-cd.md`) → update `docs/STATUS.md` → **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR.
+   - Pull `main` → **ask user confirmation** before dispatching **Implementer** & **Reviewer** sub-agents (`invoke_subagent`) to complete TDD tasks → verify `npm run lint && npm test && npm run build` and doc line caps (`docs/specs/ci-cd.md`) → update `docs/STATUS.md` → **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR.
 
 ## 3. Anti-Bloat & Brevity Rules (CRITICAL)
 - **Short Chat Responses:** Keep chat replies under ~15 lines unless asked for deep detail. Use short bullets, no walls of text.
@@ -26,4 +26,4 @@ Do **not** passively wait for micro-instructions or leave uncommitted changes ha
   - `docs/plans/<milestone-or-change>.md`: Disposable TDD task checklist for active work.
   - `docs/STATUS.md` (≤ 30 lines): Current state and next step only.
 - **Code Owns Schemas:** Once code exists, TypeScript types (`interface`/`type`) and `vitest` tests own exact data shapes—link to them instead of copying code into Markdown.
-- **Latest Production Versions Only (CRITICAL):** Never use legacy versions from model training memory. Always query live registries (`npm view <pkg> version`, `gh api repos/<owner>/<repo>/releases/latest`) and use the latest production/LTS releases (Node.js 26 LTS / `lts/*`, `actions/checkout@v7`, `actions/setup-node@v7`, `npm install <pkg>@latest`).
+- **Latest Production Versions Only (CRITICAL):** Never hand-write outdated versions from training memory into `package.json`. Always initialize via `npm init -y` and install packages with `npm i <pkg>` / `npm i -D <pkg>` so npm resolves the latest production versions automatically.
