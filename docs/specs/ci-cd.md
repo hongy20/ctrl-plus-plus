@@ -28,7 +28,7 @@
 - **CI-03:** `WHEN lint passes, THE CI Pipeline SHALL run npm test (vitest run) and npm run build (vite build) and fail if any test or build step fails.`
 
 ### Latest Production Runtime & Dependency Policy
-- **CI-05:** `THE CI Pipeline and package.json SHALL always use the latest production/LTS releases verified from live registries (Node.js 26 LTS / lts/*, actions/checkout@v7, actions/setup-node@v7, and @latest production npm packages).`
+- **CI-05:** `THE CI Pipeline and package.json SHALL always use the latest production/LTS releases (Node.js lts/*, actions/checkout@v7, actions/setup-node@v7, and npm packages installed via npm i <pkg> rather than hardcoded legacy versions).`
 
 ### Deployment Gate (Deferred Until Repo Goes Public)
 - **CI-04:** `WHEN the repository visibility is switched to Public and commits are merged to main, THE CI Pipeline SHALL publish the built dist/ artifact to GitHub Pages (actions/deploy-pages).`
