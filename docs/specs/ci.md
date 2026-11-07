@@ -1,4 +1,4 @@
-# Domain Spec: CI/CD & Quality Gates (`ci-cd`)
+# Domain Spec: CI/CD & Quality Gates (`ci`)
 
 - **Status:** Approved v1.1
 - **Stack:** GitHub Actions (`.github/workflows/ci.yml`, `actions/checkout@v7`, `actions/setup-node@v7`), Node.js 26 LTS (`lts/*`), POSIX `wc -l`, ESLint 10, TypeScript 7, Vitest 5, Vite 8
