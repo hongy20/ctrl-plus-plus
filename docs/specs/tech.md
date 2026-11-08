@@ -25,7 +25,7 @@
 - **TCH-01:** `WHEN a push or pull_request targets main, THE CI Pipeline SHALL check line counts of docs/SPEC.md (<= 80), docs/STATUS.md (<= 30), and all docs/specs/*.md (<= 80) using wc -l and fail the workflow if any file exceeds its cap.`
 
 ### Static Analysis, Testing & Build Gates
-- **TCH-02:** `WHEN package.json is present in the repository, THE CI Pipeline SHALL run npm ci and npm run lint (ESLint + tsc --noEmit) and fail on any lint or type error.`
+- **TCH-02:** `WHEN a push or pull_request targets main, THE CI Pipeline SHALL run npm ci and npm run lint (ESLint + tsc --noEmit) and fail on any lint or type error.`
 - **TCH-03:** `WHEN lint passes, THE CI Pipeline SHALL run npm test (vitest run) and npm run build (vite build) and fail if any test or build step fails.`
 - **TCH-10:** `WHEN npm test runs, THE Test Runner (vitest run --coverage via @vitest/coverage-v8) SHALL enforce a minimum 80% coverage threshold (lines, functions, branches, statements) across core source modules and fail the build if coverage drops below threshold.`
 
