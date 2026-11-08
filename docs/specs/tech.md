@@ -37,7 +37,7 @@
 
 ### GitHub Pages Continuous Deployment
 - **TCH-04:** `WHEN commits are merged to main and quality gates (TCH-01..TCH-03) pass, THE CI Pipeline SHALL upload the built dist/ artifact (actions/upload-pages-artifact) and publish it to GitHub Pages (actions/deploy-pages) over HTTPS.`
-- **TCH-09:** `WHEN building the PWA via vite-plugin-pwa, THE System SHALL generate an installable web app manifest (display: 'standalone' with 192x192 and 512x512 PNG icons) and configure the production base path (/ctrl-plus-plus/) so static assets, icons, and the service worker resolve cleanly on GitHub Pages.`
+- **TCH-09:** `WHEN building or serving the PWA via Vite and vite-plugin-pwa, THE System SHALL expose the local dev server on all network interfaces (server.host: true), generate an installable web app manifest (display: 'standalone' with 192x192 and 512x512 PNG icons), and configure the production base path (/ctrl-plus-plus/) so static assets, icons, and the service worker resolve cleanly on GitHub Pages.`
 
 ---
 

@@ -47,11 +47,12 @@ describe('Technical Configuration & CI/CD Spec Conformance', () => {
     expect(ciCdContent).toContain('name: github-pages');
   });
 
-  it('configures Vite base path for GitHub Pages (/ctrl-plus-plus/) (TCH-09)', () => {
+  it('configures Vite base path for GitHub Pages (/ctrl-plus-plus/) and dev server host (TCH-09)', () => {
     const viteConfigPath = path.join(rootDir, 'vite.config.ts');
     const viteConfigContent = fs.readFileSync(viteConfigPath, 'utf-8');
 
     expect(viteConfigContent).toContain("base: '/ctrl-plus-plus/'");
+    expect(viteConfigContent).toContain('host: true');
     expect(viteConfigContent).toContain("display: 'standalone'");
     expect(viteConfigContent).toContain("sizes: '192x192'");
     expect(viteConfigContent).toContain("sizes: '512x512'");
