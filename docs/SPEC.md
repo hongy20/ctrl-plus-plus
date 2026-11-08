@@ -64,7 +64,7 @@
 
 | Milestone | Domain Spec | Scope |
 | :--- | :--- | :--- |
-| **M1: Vehicle Control & Calibration** | [`profile.md`](specs/profile.md), [`storage.md`](specs/storage.md), [`calibration.md`](specs/calibration.md), [`control.md`](specs/control.md), [`ui.md`](specs/ui.md) | Official LEGO set profiles, per-hub storage, steering/speed calibration, LEGO Wireless Protocol BLE control & progressive braking, React SPA shell |
+| **M1: Vehicle Control & Calibration** | [`profile.md`](specs/profile.md), [`storage.md`](specs/storage.md), [`calibration.md`](specs/calibration.md), [`control.md`](specs/control.md), [`ui.md`](specs/ui.md), [`tech.md`](specs/tech.md) | Official LEGO set profiles, per-hub storage, steering/speed calibration, LEGO Wireless Protocol BLE control & progressive braking, React SPA shell, CI/CD & GitHub Pages |
 | **M2: Mobile Cockpit UI & Teleop** | [`ui.md`](specs/ui.md) | `Drive` view: touch & device-tilt steering/throttle HUD, live telemetry gauges |
 | **M3: Autonomous Driving Maneuvers** | `maneuvers.md` *(future)* | Parallel parking, 3-point turn & skills via wheel encoders + Hub IMU |
 | **M4: Sensor Pod & Obstacle Avoidance** | `sensor.md` *(future)* | Wi-Fi camera/distance stream to browser, reflex braking layer |
@@ -74,6 +74,6 @@
 
 ## 5. Locked Hardware & Stack Decisions (Formerly TBDs)
 - [x] **TBD-1 (Supported Vehicles & Reference Rig):** Any LEGO vehicle with a **Powered Up / Control+ Hub** via [`docs/specs/profile.md`](specs/profile.md); primary test/debug vehicle is **42124 Off-Road Buggy** (`TechnicHub 88012`, Tire Ø `71.6mm`, Port A Drive CCW, Port B Steer).
-- [x] **TBD-3 (Stack & Hosting):** **React 19 + TypeScript + Tailwind CSS + Vite** (`dist/` git-ignored), `@vitejs/plugin-basic-ssl` + `vite-plugin-pwa` for offline Android install (GitHub Pages ready when repo goes public), `vitest` for tests.
+- [x] **TBD-3 (Stack & Hosting):** **React 19 + TypeScript + Tailwind CSS + Vite** (`dist/` git-ignored), `@vitejs/plugin-basic-ssl` + `vite-plugin-pwa`, hosted on **GitHub Pages** (`https://hongy20.github.io/ctrl-plus-plus/`), `vitest` for tests.
 - [x] **TBD-4 (Speed Calibration):** Encoder `deg/s` + wheel circumference + `k_cal` correction factor verified via 1-meter floor run.
 - [ ] **TBD-2 (Micro-Board & Sensor Selection — Deferred to M4):** Select Wi-Fi camera/sensor board and range sensor before Milestone 4.

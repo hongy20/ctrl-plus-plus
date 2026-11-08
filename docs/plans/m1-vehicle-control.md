@@ -9,9 +9,9 @@
   - Create `src/contracts.ts`: `DriverState` type (`DISCONNECTED | CONNECTING | READY | DRIVING | CALIBRATING | EMERGENCY_STOP`), `VehicleProfile`, `HubProfile` (preset + calibration + tuning overrides like `tireDiameterMm` & `defaultBrakeIntensity`), `MotorTelemetry`, and `HubAdapter`.
   - Verify: `npm run lint && npm test` (`tests/contracts.test.ts`)
 
-- [ ] **Task 2: Node.js Engine Sync & GitHub Pages Continuous Deployment (`TCH-04`, `TCH-08`, `TCH-09`)**
-  - Add `engines.node` to `package.json` and update `.github/workflows/ci.yml` to use `node-version-file: 'package.json'` (`TCH-08`).
-  - Configure Vite & `vite-plugin-pwa` base path (`/ctrl-plus-plus/` in production) and add GitHub Pages deployment job (`actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages` on push to `main`) in `.github/workflows/ci.yml` (`TCH-04`, `TCH-09`).
+- [x] **Task 2: Node.js Engine Sync & GitHub Pages Continuous Deployment (`TCH-04`, `TCH-08`, `TCH-09`)**
+  - Add `engines.node` to `package.json` and update `.github/workflows/ci-cd.yml` to use `node-version-file: 'package.json'` (`TCH-08`).
+  - Configure Vite & `vite-plugin-pwa` base path (`/ctrl-plus-plus/` in production) and add GitHub Pages deployment job (`actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages` on push to `main`) in `.github/workflows/ci-cd.yml` (`TCH-04`, `TCH-09`).
   - Verify: `npm run lint && npm test && npm run build` (`tests/tech-config.test.ts`)
 
 - [ ] **Task 3: LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter` (`CTL-01`, `CTL-02`)**

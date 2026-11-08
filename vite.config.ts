@@ -5,6 +5,10 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  base: '/ctrl-plus-plus/',
+  server: {
+    host: true,
+  },
   plugins: [
     react(),
     tailwindcss(),
