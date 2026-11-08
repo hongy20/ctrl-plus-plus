@@ -31,9 +31,11 @@
 - **TCH-05:** `THE CI Pipeline and package.json SHALL always use the latest production/LTS releases (Node.js lts/*, actions/checkout@v7, actions/setup-node@v7, and npm packages installed via npm i <pkg> rather than hardcoded legacy versions).`
 - **TCH-06:** `WHEN defining a runtime constant list and its TypeScript union type, THE Codebase SHALL define the tuple once with as const and derive the type via (typeof X)[number] without duplicating string literals or using enum (enforced via ESLint no-restricted-syntax).`
 - **TCH-07:** `WHEN the maintenance routine runs (weekly via GitHub Dependabot or via npm update && npm audit), THE System SHALL upgrade runtime, GitHub Actions, and npm dependencies to their latest production releases and verify all lint, test, and build gates pass with zero deprecated or vulnerable packages.`
+- **TCH-08:** `THE package.json SHALL declare the Node.js runtime version in engines.node, and .github/workflows/ci.yml SHALL resolve its Node.js version directly from package.json via node-version-file: 'package.json' as the single source of truth.`
 
-### Deployment Gate (Deferred Until Repo Goes Public)
-- **TCH-04:** `WHEN the repository visibility is switched to Public and commits are merged to main, THE CI Pipeline SHALL publish the built dist/ artifact to GitHub Pages (actions/deploy-pages).`
+### GitHub Pages Continuous Deployment
+- **TCH-04:** `WHEN commits are merged to main and quality gates (TCH-01..TCH-03) pass, THE CI Pipeline SHALL upload the built dist/ artifact (actions/upload-pages-artifact) and publish it to GitHub Pages (actions/deploy-pages) over HTTPS.`
+- **TCH-09:** `WHEN building for production deployment on GitHub Pages, THE Vite and PWA configuration SHALL configure the base path (/ctrl-plus-plus/) so all static assets and service worker scopes resolve cleanly on https://hongy20.github.io/ctrl-plus-plus/.`
 
 ---
 

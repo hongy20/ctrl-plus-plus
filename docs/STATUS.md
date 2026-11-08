@@ -14,4 +14,4 @@
 ---
 
 ## Next Step
-Merge **M1 Task 1** PR, then review specs and execute **M1 Task 2** (`src/lego-protocol.ts` & `src/hub-adapter.ts`).
+Merge **M1 Task 1** PR, then review specs and execute **M1 Task 2** (Node.js Engine Sync & GitHub Pages Continuous Deployment: `TCH-04`, `TCH-08`, `TCH-09`).
