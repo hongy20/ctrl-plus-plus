@@ -5,13 +5,21 @@ import * as path from 'node:path';
 describe('Technical Configuration & CI/CD Spec Conformance', () => {
   const rootDir = path.resolve(__dirname, '..');
 
-  it('declares Node.js runtime version >=24.0.0 in package.json engines (TCH-08)', () => {
+  it('declares Node.js runtime version in package.json engines synced with @types/node major version (TCH-08)', () => {
     const pkgPath = path.join(rootDir, 'package.json');
     const pkgContent = fs.readFileSync(pkgPath, 'utf-8');
-    const pkg = JSON.parse(pkgContent) as { engines?: { node?: string } };
+    const pkg = JSON.parse(pkgContent) as {
+      engines?: { node?: string };
+      devDependencies?: Record<string, string>;
+    };
 
     expect(pkg.engines).toBeDefined();
-    expect(pkg.engines?.node).toBe('>=24.0.0');
+    expect(pkg.engines?.node).toBe('>=26.0.0');
+
+    const engineMajor = pkg.engines?.node?.match(/\d+/)?.[0];
+    const typesNodeMajor = pkg.devDependencies?.['@types/node']?.match(/\d+/)?.[0];
+    expect(engineMajor).toBeDefined();
+    expect(engineMajor).toBe(typesNodeMajor);
   });
 
   it('configures GitHub Actions CI/CD to source Node version from package.json (TCH-08)', () => {
