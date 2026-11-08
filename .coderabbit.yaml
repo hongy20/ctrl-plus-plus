@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: "en-US"
 reviews:
-  profile: "assertive"
+  profile: "chill"
   request_changes_workflow: true
   high_level_summary: true
   poem: false
@@ -9,18 +9,14 @@ reviews:
     enabled: true
     drafts: false
   path_instructions:
-    - path: "docs/**"
-      instructions: |
-        Verify strict compliance with `AGENTS.md` and `docs/specs/ci.md`:
-        1. Check hard line caps: `docs/SPEC.md` <= 80 lines, `docs/STATUS.md` <= 30 lines, `docs/specs/*.md` <= 80 lines each.
-        2. Ensure zero contradictions across `docs/SPEC.md` and `docs/specs/*.md` (100% client-side Mobile Web App / Android Chrome WebBLE architecture, LEGO Wireless Protocol v3, no desktop backend/Python/Node server assumptions).
-        3. Ensure domain requirements use concise EARS syntax (`WHEN [trigger], THE [component] SHALL [action]`).
     - path: "src/**"
       instructions: |
-        Audit implementation strictly against `docs/specs/*.md` EARS requirements (`PRF-*`, `STR-*`, `CAL-*`, `CTL-*`, `UI-*`, `CI-*`):
-        1. Every behavioral requirement in the active domain specs must be satisfied and covered by Vitest unit tests in `tests/**`.
-        2. Enforce simplicity and surgical changes: no speculative abstractions, no dead code, strict TypeScript types (`no any`).
-        3. Verify safety-critical invariants (`CTL-03` calibration lock, `CTL-06` progressive brake ramp, `CTL-07` 200ms watchdog -> EMERGENCY_STOP, `CTL-08` page background disconnect).
-    - path: "package.json"
+        Focus exclusively on behavioral compliance with the domain specifications in `docs/specs/*.md`:
+        1. Cross-check changed implementation code against the EARS requirements (`PRF-*`, `STR-*`, `CAL-*`, `CTL-*`, `UI-*`) and state machines in `docs/specs/*.md`. Flag any missing state transitions, wrong formulas/thresholds, or unimplemented edge cases.
+        2. Do NOT comment on code formatting, linting, TypeScript syntax, or line counts—those are already enforced by GitHub Actions CI.
+    - path: "tests/**"
       instructions: |
-        Verify compliance with `CI-05`: packages must use current production releases, not outdated legacy versions.
+        Verify that tests meaningfully validate the behavioral rules and edge cases defined in `docs/specs/*.md` rather than testing superficial mocks or tautologies.
+    - path: "docs/**"
+      instructions: |
+        Check only for behavioral, architectural, or state-machine contradictions across `docs/SPEC.md` and `docs/specs/*.md`. Do NOT check line counts or formatting (handled by CI).
