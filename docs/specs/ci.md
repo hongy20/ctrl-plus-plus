@@ -29,6 +29,7 @@
 
 ### Latest Production Runtime & Dependency Policy
 - **CI-05:** `THE CI Pipeline and package.json SHALL always use the latest production/LTS releases (Node.js lts/*, actions/checkout@v7, actions/setup-node@v7, and npm packages installed via npm i <pkg> rather than hardcoded legacy versions).`
+- **CI-06:** `WHEN defining a runtime constant list and its TypeScript union type, THE Codebase SHALL define the tuple once with as const and derive the type via (typeof X)[number] without duplicating string literals or using enum (enforced via ESLint no-restricted-syntax).`
 
 ### Deployment Gate (Deferred Until Repo Goes Public)
 - **CI-04:** `WHEN the repository visibility is switched to Public and commits are merged to main, THE CI Pipeline SHALL publish the built dist/ artifact to GitHub Pages (actions/deploy-pages).`

@@ -1,12 +1,4 @@
-export type DriverState =
-  | 'DISCONNECTED'
-  | 'CONNECTING'
-  | 'READY'
-  | 'DRIVING'
-  | 'CALIBRATING'
-  | 'EMERGENCY_STOP';
-
-export const DRIVER_STATES: readonly DriverState[] = [
+export const DRIVER_STATES = [
   'DISCONNECTED',
   'CONNECTING',
   'READY',
@@ -14,6 +6,8 @@ export const DRIVER_STATES: readonly DriverState[] = [
   'CALIBRATING',
   'EMERGENCY_STOP',
 ] as const;
+
+export type DriverState = (typeof DRIVER_STATES)[number];
 
 export interface VehicleProfile {
   setId: string;
