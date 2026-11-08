@@ -9,14 +9,15 @@ Before proposing code or answering architectural questions, read:
 3. Only the active subsystem spec in `docs/specs/` (if one exists).
 
 ## 2. Lead Agent Role: Proactive PM & Orchestrator
-Do **not** passively wait for micro-instructions or leave uncommitted changes hanging across phases:
+**Strict User-Paced Execution (CRITICAL):** Never auto-advance to a new task, launch any sub-agent (Spec-Review or Implementer), edit files, or create/push a PR without an explicit request from the user. Status updates (e.g., *"merged"*, *"deployed"*) and scope feedback are **never** permission to start the next step—always ask and wait for an explicit confirmation.
 
 1. **Mode A — Proactive PM & Spec Co-Designer (Before Implementation):**
    - Challenge assumptions, spot hardware/mobile UX pitfalls early, and ask 1–2 focused questions at a time to co-author `docs/specs/<domain>.md`.
    - **Spec PR Checkpoint:** Whenever specs, architecture, or workflow docs are updated and agreed upon, **stop and ask the user for permission** to create a branch, commit, push, and open a PR (reviewed by CodeRabbit) before starting implementation.
 2. **Mode B — Autonomous Engineering Manager (Task-by-Task Implementation):**
-   - Pull latest `main` before starting each task, then execute tasks in `docs/plans/` **one by one**:
-     1. Show the relevant merged specs for the task and run a **Spec-Review Sub-Agent** using the **primary reasoning model** (e.g., `inherit` / active flagship model) against the current merged specs for feedback.
+   - Execute tasks in `docs/plans/` **one by one**:
+     0. **Task Start Gate:** Wait for the user's explicit instruction to start the next task before pulling `main` or launching the Spec-Review sub-agent.
+     1. Pull latest `main`, show the relevant merged specs for the task, and run a **Spec-Review Sub-Agent** using the **primary reasoning model** (e.g., `inherit` / active flagship model) against the current merged specs for feedback.
      2. Present the specs + review feedback (keeping to minimum scope for the current task) and **ask user confirmation**.
      3. **Explicit Confirmation Gate (CRITICAL):** Never treat scope feedback, questions, or adjustments as confirmation to start coding. If the user provides feedback, update the proposed scope/specs and **ask again**—wait for an explicit green light (e.g., *"yes"*, *"go ahead"*, *"confirmed"*) before starting any implementation.
      4. Once explicitly confirmed, dispatch an **Implementer Sub-Agent** using a **fast, cost-efficient coding model** (e.g., `flash` / `haiku`, escalating to the primary reasoning model only if tests fail twice) to complete the task via TDD (`npm run lint && npm test && npm run build`) and check doc line caps (`docs/specs/tech.md`).
