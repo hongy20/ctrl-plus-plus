@@ -30,6 +30,7 @@
 ### Latest Production Runtime, Dependency & Code Conventions
 - **TCH-05:** `THE CI Pipeline and package.json SHALL always use the latest production/LTS releases (Node.js lts/*, actions/checkout@v7, actions/setup-node@v7, and npm packages installed via npm i <pkg> rather than hardcoded legacy versions).`
 - **TCH-06:** `WHEN defining a runtime constant list and its TypeScript union type, THE Codebase SHALL define the tuple once with as const and derive the type via (typeof X)[number] without duplicating string literals or using enum (enforced via ESLint no-restricted-syntax).`
+- **TCH-07:** `WHEN the maintenance routine runs (weekly via GitHub Dependabot or via npm update && npm audit), THE System SHALL upgrade runtime, GitHub Actions, and npm dependencies to their latest production releases and verify all lint, test, and build gates pass with zero deprecated or vulnerable packages.`
 
 ### Deployment Gate (Deferred Until Repo Goes Public)
 - **TCH-04:** `WHEN the repository visibility is switched to Public and commits are merged to main, THE CI Pipeline SHALL publish the built dist/ artifact to GitHub Pages (actions/deploy-pages).`

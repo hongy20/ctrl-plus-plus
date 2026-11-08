@@ -1,6 +1,6 @@
 # M1 Implementation Plan: Web Bluetooth Vehicle Control, Profiles, Storage & Calibration
 
-> **Spec References:** [`docs/specs/profile.md`](../specs/profile.md) (`PRF-01`..`PRF-02`), [`docs/specs/storage.md`](../specs/storage.md) (`STR-01`..`STR-04`), [`docs/specs/calibration.md`](../specs/calibration.md) (`CAL-01`..`CAL-03`), [`docs/specs/control.md`](../specs/control.md) (`CTL-01`..`CTL-08`), [`docs/specs/ui.md`](../specs/ui.md) (`UI-01`..`UI-06`), [`docs/specs/tech.md`](../specs/tech.md) (`TCH-01`..`TCH-06`)
+> **Spec References:** [`docs/specs/profile.md`](../specs/profile.md) (`PRF-01`..`PRF-02`), [`docs/specs/storage.md`](../specs/storage.md) (`STR-01`..`STR-04`), [`docs/specs/calibration.md`](../specs/calibration.md) (`CAL-01`..`CAL-03`), [`docs/specs/control.md`](../specs/control.md) (`CTL-01`..`CTL-08`), [`docs/specs/ui.md`](../specs/ui.md) (`UI-01`..`UI-06`), [`docs/specs/tech.md`](../specs/tech.md) (`TCH-01`..`TCH-07`)
 
 ## Tasks (TDD Loop: Failing Test → Minimal Code → Pass → Commit)
 
