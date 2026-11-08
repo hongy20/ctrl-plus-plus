@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "docs/**"
+      instructions: |
+        Verify strict compliance with `AGENTS.md` and `docs/specs/ci.md`:
+        1. Check hard line caps: `docs/SPEC.md` <= 80 lines, `docs/STATUS.md` <= 30 lines, `docs/specs/*.md` <= 80 lines each.
+        2. Ensure zero contradictions across `docs/SPEC.md` and `docs/specs/*.md` (100% client-side Mobile Web App / Android Chrome WebBLE architecture, LEGO Wireless Protocol v3, no desktop backend/Python/Node server assumptions).
+        3. Ensure domain requirements use concise EARS syntax (`WHEN [trigger], THE [component] SHALL [action]`).
+    - path: "src/**"
+      instructions: |
+        Audit implementation strictly against `docs/specs/*.md` EARS requirements (`PRF-*`, `STR-*`, `CAL-*`, `CTL-*`, `UI-*`, `CI-*`):
+        1. Every behavioral requirement in the active domain specs must be satisfied and covered by Vitest unit tests in `tests/**`.
+        2. Enforce simplicity and surgical changes: no speculative abstractions, no dead code, strict TypeScript types (`no any`).
+        3. Verify safety-critical invariants (`CTL-03` calibration lock, `CTL-06` progressive brake ramp, `CTL-07` 200ms watchdog -> EMERGENCY_STOP, `CTL-08` page background disconnect).
+    - path: "package.json"
+      instructions: |
+        Verify compliance with `CI-05`: packages must use current production releases, not outdated legacy versions.
