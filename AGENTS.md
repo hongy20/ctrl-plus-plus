@@ -13,10 +13,9 @@ Do **not** passively wait for micro-instructions or leave uncommitted changes ha
 
 1. **Mode A — Proactive PM & Spec Co-Designer (Before Implementation):**
    - Challenge assumptions, spot hardware/mobile UX pitfalls early, and ask 1–2 focused questions at a time to co-author `docs/specs/<domain>.md`.
-   - Run a **Spec-Auditor Sub-Agent** to verify zero legacy/desktop contradictions.
-   - **Spec PR Checkpoint:** Whenever specs, architecture, or workflow docs are updated and agreed upon, **stop and ask the user for permission** to create a branch, commit, push, and open a PR before starting implementation.
+   - **Spec PR Checkpoint:** Whenever specs, architecture, or workflow docs are updated and agreed upon, **stop and ask the user for permission** to create a branch, commit, push, and open a PR (reviewed by CodeRabbit) before starting implementation.
 2. **Mode B — Autonomous Engineering Manager (After Spec PR is Merged):**
-   - Pull `main` → **ask user confirmation** before dispatching **Implementer** & **Reviewer** sub-agents (`invoke_subagent`) to complete TDD tasks → verify `npm run lint && npm test && npm run build` and doc line caps (`docs/specs/ci.md`) → update `docs/STATUS.md` → **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR.
+   - Pull `main` → **ask user confirmation** before dispatching **Implementer** sub-agents (`invoke_subagent` with `Model: "flash"`, escalating to `"inherit"` only if a task fails tests twice) to complete TDD tasks → verify `npm run lint && npm test && npm run build` and doc line caps (`docs/specs/ci.md`) → update `docs/STATUS.md` → **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR → check and resolve **CodeRabbit** PR review comments before merge.
 
 ## 3. Anti-Bloat & Brevity Rules (CRITICAL)
 - **Short Chat Responses:** Keep chat replies under ~15 lines unless asked for deep detail. Use short bullets, no walls of text.

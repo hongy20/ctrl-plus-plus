@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+reviews:
+  profile: "chill"
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "src/**"
+      instructions: |
+        Focus exclusively on behavioral compliance with the domain specifications in `docs/specs/*.md`:
+        1. Cross-check changed implementation code against the EARS requirements (`PRF-*`, `STR-*`, `CAL-*`, `CTL-*`, `UI-*`) and state machines in `docs/specs/*.md`. Flag any missing state transitions, wrong formulas/thresholds, or unimplemented edge cases.
+        2. Do NOT comment on code formatting, linting, TypeScript syntax, or line counts—those are already enforced by GitHub Actions CI.
+    - path: "tests/**"
+      instructions: |
+        Verify that tests meaningfully validate the behavioral rules and edge cases defined in `docs/specs/*.md` rather than testing superficial mocks or tautologies.
+    - path: "docs/**"
+      instructions: |
+        Check only for behavioral, architectural, or state-machine contradictions across `docs/SPEC.md` and `docs/specs/*.md`. Do NOT check line counts or formatting (handled by CI).

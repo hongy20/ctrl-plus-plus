@@ -2,14 +2,14 @@
 
 The official **LEGO Control+** and **Powered Up** apps for remote-controlled vehicles offer a frustrating driving experience: on-screen touch sliders lack tactile feedback, holding a steady cruising speed is difficult, and braking is strictly **all-or-nothing**—lifting your thumb or hitting the brake either lets the car coast freely or locks the wheels with an abrupt jerk instead of slowing down smoothly like a real car.
 
-**Ctrl++** replaces the stock app with a direct **Mobile Web** controller and autopilot running right in your phone's browser:
+**Ctrl++** replaces the stock app with a direct **Mobile Web** controller with pre-programmed driving functionalities running right in your phone's browser:
 - **Realistic Driving & Smooth Braking:** Tilt your phone to steer, hold steady cruising speeds, and slow down smoothly with progressive braking.
 - **Automated Driving Tricks:** Execute one-tap stunts and maneuvers like **parallel parking**, **3-point turns**, and **U-turns** using the car's built-in sensors.
 - **First-Person Camera & Home Racing (Future):** Mount a lightweight wireless camera to build mixed-reality living-room racing games inspired by ***Mario Kart Live: Home Circuit***.
 
 ## 🛠️ Hardware
 
-**Ctrl++** supports any LEGO vehicle powered by a **LEGO Powered Up / Control+ Bluetooth Hub** through built-in vehicle profiles and customizable port/wheel settings. I use my stock **[LEGO Technic 42124 Off-Road Buggy](https://www.lego.com/en-us/product/off-road-buggy-42124)** (with zero hardware or wiring modifications) for debugging and testing:
+**Ctrl++** supports any LEGO vehicle powered by a **LEGO Powered Up / Control+ Bluetooth Hub** through built-in vehicle profiles and customizable port/wheel settings. I use my stock **[LEGO Technic 42124 Off-Road Buggy](https://www.lego.com/en-us/product/off-road-buggy-42124)** for debugging and testing:
 
 <p align="center">
   <img src="https://cdn.rebrickable.com/media/sets/42124-1.jpg" alt="LEGO Technic 42124 Off-Road Buggy" width="420" />
@@ -20,7 +20,7 @@ The official **LEGO Control+** and **Powered Up** apps for remote-controlled veh
 npm install
 npm run dev -- --host     # Serve over local HTTPS for Android Chrome
 ```
-1. Open `https://<mac-ip>:5173` in **Android Chrome** and tap **"Add to Home Screen"** (caches the app offline so you don't need a laptop running).
+1. Open `https://<mac-ip>:5173` in **Android Chrome**.
 2. Turn on your LEGO Hub, tap **Connect**, choose your vehicle profile (default: **42124 Off-Road Buggy**), and run **Steering & Speed Calibration**.
 
 ## 🧠 SDLC (Software Development Life Cycle)
