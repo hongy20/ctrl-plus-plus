@@ -10,8 +10,9 @@
 - [x] Rebranded project to **Ctrl++** (`ctrl-plus-plus`) with plain-language README.
 - [x] Organized domain specifications into clean 1-word specs: [`profile.md`](specs/profile.md) (`PRF-*`), [`storage.md`](specs/storage.md) (`STR-*`), [`calibration.md`](specs/calibration.md) (`CAL-*`), [`control.md`](specs/control.md) (`CTL-*`), [`ui.md`](specs/ui.md) (`UI-*`), and [`tech.md`](specs/tech.md) (`TCH-*`).
 - [x] Completed **M1 Task 1**: Vite + React + TS + ESLint + PWA scaffold and `src/contracts.ts`.
+- [x] Completed **M1 Task 2**: Node.js engine sync (`engines.node: >=24.0.0`), GitHub Pages CI/CD workflow (`ci-cd.yml`), base path (`/ctrl-plus-plus/`), and `tests/tech-config.test.ts`.
 
 ---
 
 ## Next Step
-Merge **M1 Task 1** PR, then review specs and execute **M1 Task 2** (Node.js Engine Sync & GitHub Pages Continuous Deployment: `TCH-04`, `TCH-08`, `TCH-09`).
+Merge **M1 Task 2** PR, then review specs and execute **M1 Task 3** (LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter`: `CTL-01`, `CTL-02`).
