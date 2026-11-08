@@ -14,8 +14,13 @@ Do **not** passively wait for micro-instructions or leave uncommitted changes ha
 1. **Mode A — Proactive PM & Spec Co-Designer (Before Implementation):**
    - Challenge assumptions, spot hardware/mobile UX pitfalls early, and ask 1–2 focused questions at a time to co-author `docs/specs/<domain>.md`.
    - **Spec PR Checkpoint:** Whenever specs, architecture, or workflow docs are updated and agreed upon, **stop and ask the user for permission** to create a branch, commit, push, and open a PR (reviewed by CodeRabbit) before starting implementation.
-2. **Mode B — Autonomous Engineering Manager (After Spec PR is Merged):**
-   - Pull `main` → **ask user confirmation** before dispatching **Implementer** sub-agents (`invoke_subagent` with `Model: "flash"`, escalating to `"inherit"` only if a task fails tests twice) to complete TDD tasks → verify `npm run lint && npm test && npm run build` and doc line caps (`docs/specs/ci.md`) → update `docs/STATUS.md` → **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR → check and resolve **CodeRabbit** PR review comments before merge.
+2. **Mode B — Autonomous Engineering Manager (Task-by-Task Implementation):**
+   - Pull latest `main` before starting each task, then execute tasks in `docs/plans/` **one by one**:
+     1. Show the relevant merged specs for the task and run a **Spec-Review Sub-Agent** (`Model: "inherit"`) against the current merged specs for feedback.
+     2. Present the specs + review feedback (keeping to minimum scope for the current task) and **ask user confirmation**.
+     3. **Explicit Confirmation Gate (CRITICAL):** Never treat scope feedback, questions, or adjustments as confirmation to start coding. If the user provides feedback, update the proposed scope/specs and **ask again**—wait for an explicit green light (e.g., *"yes"*, *"go ahead"*, *"confirmed"*) before starting any implementation.
+     4. Once explicitly confirmed, dispatch an **Implementer Sub-Agent** (`Model: "flash"`, escalating to `"inherit"` only if tests fail twice) to complete the task via TDD (`npm run lint && npm test && npm run build`) and check doc line caps (`docs/specs/tech.md`).
+     5. When the task finishes, update `docs/STATUS.md` with the completed task and next step, **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR, and then check and resolve actionable **CodeRabbit** PR review comments before merging.
 
 ## 3. Anti-Bloat & Brevity Rules (CRITICAL)
 - **Short Chat Responses:** Keep chat replies under ~15 lines unless asked for deep detail. Use short bullets, no walls of text.

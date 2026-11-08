@@ -1,0 +1,46 @@
+{
+  "name": "ctrl-plus-plus",
+  "version": "1.0.0",
+  "description": "The official **LEGO Control+** and **Powered Up** apps for remote-controlled vehicles offer a frustrating driving experience: on-screen touch sliders lack tactile feedback, holding a steady cruising speed is difficult, and braking is strictly **all-or-nothing**—lifting your thumb or hitting the brake either lets the car coast freely or locks the wheels with an abrupt jerk instead of slowing down smoothly like a real car.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hongy20/ctrl-plus-plus.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/hongy20/ctrl-plus-plus/issues"
+  },
+  "homepage": "https://github.com/hongy20/ctrl-plus-plus#readme",
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "eslint": "^10.14.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.6",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^4.1.12"
+  }
+}
