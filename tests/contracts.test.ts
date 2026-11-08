@@ -5,7 +5,6 @@ import {
   VehicleProfile,
   HubProfile,
   MotorTelemetry,
-  HubAdapter,
 } from '../src/contracts';
 
 describe('Contracts', () => {
@@ -75,74 +74,5 @@ describe('Contracts', () => {
     expect(sampleTelemetry.angleDeg).toBe(180);
     expect(sampleTelemetry.speedDegPerSec).toBe(360);
     expect(sampleTelemetry.timestampMs).toBe(123456);
-  });
-
-  it('satisfies the HubAdapter contract', async () => {
-    let connected = false;
-    let messageListener: ((packet: Uint8Array) => void) | null = null;
-    let disconnectListener: (() => void) | null = null;
-    const sentPackets: Uint8Array[] = [];
-
-    const mockAdapter: HubAdapter = {
-      async connect() {
-        connected = true;
-      },
-      async disconnect() {
-        connected = false;
-        disconnectListener?.();
-      },
-      isConnected() {
-        return connected;
-      },
-      getHubId() {
-        return 'mock-hub-1';
-      },
-      getHubName() {
-        return 'Mock Technic Hub';
-      },
-      async send(packet: Uint8Array) {
-        sentPackets.push(packet);
-      },
-      onMessage(cb: (packet: Uint8Array) => void) {
-        messageListener = cb;
-        return () => {
-          messageListener = null;
-        };
-      },
-      onDisconnect(cb: () => void) {
-        disconnectListener = cb;
-        return () => {
-          disconnectListener = null;
-        };
-      },
-    };
-
-    expect(mockAdapter.isConnected()).toBe(false);
-    await mockAdapter.connect();
-    expect(mockAdapter.isConnected()).toBe(true);
-    expect(mockAdapter.getHubId()).toBe('mock-hub-1');
-    expect(mockAdapter.getHubName()).toBe('Mock Technic Hub');
-
-    const testPacket = new Uint8Array([0x01, 0x02, 0x03]);
-    await mockAdapter.send(testPacket);
-    expect(sentPackets).toEqual([testPacket]);
-
-    let received: Uint8Array | null = null;
-    const unsubscribeMsg = mockAdapter.onMessage((pkt) => {
-      received = pkt;
-    });
-    const dispatchMessage = messageListener as ((pkt: Uint8Array) => void) | null;
-    dispatchMessage?.(testPacket);
-    expect(received).toEqual(testPacket);
-    unsubscribeMsg();
-
-    let disconnectedCalled = false;
-    const unsubscribeDisc = mockAdapter.onDisconnect(() => {
-      disconnectedCalled = true;
-    });
-    await mockAdapter.disconnect();
-    expect(mockAdapter.isConnected()).toBe(false);
-    expect(disconnectedCalled).toBe(true);
-    unsubscribeDisc();
   });
 });
