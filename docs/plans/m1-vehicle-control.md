@@ -1,10 +1,10 @@
 # M1 Implementation Plan: Web Bluetooth Vehicle Control, Profiles, Storage & Calibration
 
-> **Spec References:** [`docs/specs/profile.md`](../specs/profile.md) (`PRF-01`..`PRF-02`), [`docs/specs/storage.md`](../specs/storage.md) (`STR-01`..`STR-04`), [`docs/specs/calibration.md`](../specs/calibration.md) (`CAL-01`..`CAL-03`), [`docs/specs/control.md`](../specs/control.md) (`CTL-01`..`CTL-08`), [`docs/specs/ui.md`](../specs/ui.md) (`UI-01`..`UI-06`), [`docs/specs/ci.md`](../specs/ci.md) (`CI-01`..`CI-05`)
+> **Spec References:** [`docs/specs/profile.md`](../specs/profile.md) (`PRF-01`..`PRF-02`), [`docs/specs/storage.md`](../specs/storage.md) (`STR-01`..`STR-04`), [`docs/specs/calibration.md`](../specs/calibration.md) (`CAL-01`..`CAL-03`), [`docs/specs/control.md`](../specs/control.md) (`CTL-01`..`CTL-08`), [`docs/specs/ui.md`](../specs/ui.md) (`UI-01`..`UI-06`), [`docs/specs/tech.md`](../specs/tech.md) (`TCH-01`..`TCH-06`)
 
 ## Tasks (TDD Loop: Failing Test → Minimal Code → Pass → Commit)
 
-- [x] **Task 1: Vite + React + TypeScript + ESLint + PWA Scaffold & Contracts (`PRF-01`, `STR-01`, `CTL-01`, `CI-02`, `CI-05`)**
+- [x] **Task 1: Vite + React + TypeScript + ESLint + PWA Scaffold & Contracts (`PRF-01`, `STR-01`, `CTL-01`, `TCH-02`, `TCH-05`, `TCH-06`)**
   - Initialize via `npm init -y` and `npm i` / `npm i -D` (React, TypeScript, Tailwind CSS, ESLint + `typescript-eslint`, Vite, `@vitejs/plugin-basic-ssl`, `vite-plugin-pwa`, Vitest), configure `tsconfig.json`, `eslint.config.js`, `vite.config.ts`, and `.gitignore` (`node_modules/`, `dist/`).
   - Create `src/contracts.ts`: `DriverState` type (`DISCONNECTED | CONNECTING | READY | DRIVING | CALIBRATING | EMERGENCY_STOP`), `VehicleProfile`, `HubProfile` (preset + calibration + tuning overrides like `tireDiameterMm` & `defaultBrakeIntensity`), `MotorTelemetry`, and `HubAdapter`.
   - Verify: `npm run lint && npm test` (`tests/contracts.test.ts`)

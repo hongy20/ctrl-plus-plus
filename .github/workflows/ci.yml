@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Enforce Markdown Line Caps (CI-01)
+      - name: Enforce Markdown Line Caps (TCH-01)
         run: |
           check_cap() {
             local file="$1"
@@ -39,7 +39,7 @@ jobs:
           node-version: 'lts/*'
           cache: npm
 
-      - name: Install, Lint, Test & Build (CI-02, CI-03)
+      - name: Install, Lint, Test & Build (TCH-02, TCH-03)
         if: hashFiles('package.json') != ''
         run: |
           npm ci
