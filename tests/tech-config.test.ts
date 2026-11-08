@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { build } from 'vite';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -56,17 +57,20 @@ describe('Technical Configuration & CI/CD Spec Conformance', () => {
     expect(viteConfigContent).toContain("sizes: '512x512'");
   });
 
-  it('generates PWA manifest with correct scope and start_url when built (TCH-09)', () => {
+  it('generates PWA manifest with correct scope and start_url when built (TCH-09)', async () => {
+    await build({ root: rootDir, logLevel: 'silent' });
     const manifestPath = path.join(rootDir, 'dist', 'manifest.webmanifest');
-    if (fs.existsSync(manifestPath)) {
-      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as {
-        start_url?: string;
-        scope?: string;
-        display?: string;
-      };
-      expect(manifest.start_url).toBe('/ctrl-plus-plus/');
-      expect(manifest.scope).toBe('/ctrl-plus-plus/');
-      expect(manifest.display).toBe('standalone');
-    }
+    expect(fs.existsSync(manifestPath)).toBe(true);
+
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as {
+      start_url?: string;
+      scope?: string;
+      display?: string;
+      icons?: Array<{ sizes?: string }>;
+    };
+    expect(manifest.start_url).toBe('/ctrl-plus-plus/');
+    expect(manifest.scope).toBe('/ctrl-plus-plus/');
+    expect(manifest.display).toBe('standalone');
+    expect(manifest.icons?.map((i) => i.sizes)).toEqual(['192x192', '512x512']);
   });
 });

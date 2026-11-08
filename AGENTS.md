@@ -20,7 +20,9 @@ Do **not** passively wait for micro-instructions or leave uncommitted changes ha
      2. Present the specs + review feedback (keeping to minimum scope for the current task) and **ask user confirmation**.
      3. **Explicit Confirmation Gate (CRITICAL):** Never treat scope feedback, questions, or adjustments as confirmation to start coding. If the user provides feedback, update the proposed scope/specs and **ask again**—wait for an explicit green light (e.g., *"yes"*, *"go ahead"*, *"confirmed"*) before starting any implementation.
      4. Once explicitly confirmed, dispatch an **Implementer Sub-Agent** (`Model: "flash"`, escalating to `"inherit"` only if tests fail twice) to complete the task via TDD (`npm run lint && npm test && npm run build`) and check doc line caps (`docs/specs/tech.md`).
-     5. When the task finishes, update `docs/STATUS.md` with the completed task and next step, **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR, and then check and resolve actionable **CodeRabbit** PR review comments before merging.
+     5. When the task finishes, update `docs/STATUS.md` with the completed task and next step, **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR, and then check and resolve actionable **CodeRabbit** PR review comments before merging:
+        - **Spec-First Check on Review Comments:** If a CodeRabbit comment proposes behavior not yet in `docs/specs/*.md`, ask the user whether to add it to the spec first before coding.
+        - **Batch Pushes & Resolve Threads:** Batch follow-up fixes into a single push on an open PR to avoid CodeRabbit OSS rate limits, and resolve fixed review threads via GitHub GraphQL (`resolveReviewThread`).
 
 ## 3. Anti-Bloat & Brevity Rules (CRITICAL)
 - **Short Chat Responses:** Keep chat replies under ~15 lines unless asked for deep detail. Use short bullets, no walls of text.

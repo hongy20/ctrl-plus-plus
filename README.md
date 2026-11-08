@@ -16,11 +16,13 @@ The official **LEGO Control+** and **Powered Up** apps for remote-controlled veh
 </p>
 
 ## 🚀 Quick Start
+- **Hosted App (GitHub Pages):** Open **`https://hongy20.github.io/ctrl-plus-plus/`** directly in **Android Chrome**.
+- **Local Development:**
 ```bash
 npm install
 npm run dev -- --host     # Serve over local HTTPS for Android Chrome
 ```
-1. Open `https://<mac-ip>:5173` in **Android Chrome**.
+1. Open `https://hongy20.github.io/ctrl-plus-plus/` (or `https://<mac-ip>:5173` locally) in **Android Chrome**.
 2. Turn on your LEGO Hub, tap **Connect**, choose your vehicle profile (default: **42124 Off-Road Buggy**), and run **Steering & Speed Calibration**.
 
 ## 🧠 SDLC (Software Development Life Cycle)
