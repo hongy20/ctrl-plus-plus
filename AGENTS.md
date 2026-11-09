@@ -13,7 +13,7 @@ Before proposing code or answering architectural questions, read:
 
 1. **Mode A — Proactive PM & Spec Co-Designer (Before Implementation):**
    - Challenge assumptions, spot hardware/mobile UX pitfalls early, and ask 1–2 focused questions at a time to co-author `docs/specs/<domain>.md`.
-   - **Spec PR Checkpoint:** Whenever specs, architecture, or workflow docs are updated and agreed upon, **stop and ask the user for permission** to create a branch, commit, push, and open a PR (reviewed by CodeRabbit) before starting implementation.
+   - **Spec PR Checkpoint:** Whenever specs, architecture, or workflow docs are updated and agreed upon, **stop and ask the user for permission** to create a branch, commit, push, and open a **draft PR** (`gh pr create --draft`) so the user can review first before marking it ready for CodeRabbit.
 2. **Mode B — Autonomous Engineering Manager (Task-by-Task Implementation):**
    - Execute tasks in `docs/plans/` **one by one**:
      0. **Task Start Gate:** Wait for the user's explicit instruction to start the next task before pulling `main` or launching the Spec-Review sub-agent.
@@ -21,7 +21,7 @@ Before proposing code or answering architectural questions, read:
      2. Present the specs + review feedback (keeping to minimum scope for the current task) and **ask user confirmation**.
      3. **Explicit Confirmation Gate (CRITICAL):** Never treat scope feedback, questions, or adjustments as confirmation to start coding. If the user provides feedback, update the proposed scope/specs and **ask again**—wait for an explicit green light (e.g., *"yes"*, *"go ahead"*, *"confirmed"*) before starting any implementation.
      4. Once explicitly confirmed, dispatch an **Implementer Sub-Agent** using a **fast, cost-efficient coding model** (e.g., `flash` / `haiku`, escalating to the primary reasoning model only if tests fail twice) to complete the task via TDD (`npm run lint && npm test && npm run build`) and check doc line caps (`docs/specs/tech.md`).
-     5. When the task finishes, update `docs/STATUS.md` with the completed task and next step, **ask user permission** before creating a branch, committing, pushing, and opening a GitHub PR, and then check and resolve actionable **CodeRabbit** PR review comments before merging:
+     5. When the task finishes, update `docs/STATUS.md` with the completed task and next step, **ask user permission** before creating a branch, committing, pushing, and opening a **draft GitHub PR** (`gh pr create --draft`) so the user can review first before marking ready for **CodeRabbit**:
         - **Spec-First Check on Review Comments:** If a CodeRabbit comment proposes behavior not yet in `docs/specs/*.md`, ask the user whether to add it to the spec first before coding.
         - **Batch Pushes & Resolve Threads:** Batch follow-up fixes into a single push on an open PR to avoid CodeRabbit OSS rate limits, and resolve fixed review threads via GitHub GraphQL (`resolveReviewThread`).
         - **CLI & Git Offloading (Token Efficiency):** Do not re-run `lint`/`test`/`build` in the main session after an Implementer sub-agent has verified them; delegate routine `git`, `gh`, and PR-check CLI operations to the **lightest sub-agent model tier** (e.g., `flash_lite` / `haiku`) so verbose terminal output stays out of the primary reasoning context.
