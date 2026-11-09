@@ -22,7 +22,7 @@
 
 ### BLE Transport, Hub Discovery & Telemetry (LEGO Wireless Protocol)
 - **CTL-01:** `WHEN connect() is invoked, THE WebBleHubAdapter SHALL open the browser Web Bluetooth chooser filtered by LEGO Wireless Protocol service UUID (00001623-1212-efde-1623-785feabcd123) and connect to the GATT characteristic (00001624-1212-efde-1623-785feabcd123).`
-- **CTL-02:** `WHEN connected, THE VehicleDriver SHALL set the Hub LED (Port 0x32) to Cyan, query all LEGO Wireless Protocol Hub Properties (0x01..0x0D including Advertising Name 0x01, MAC Address 0x0D, FW/HW versions, RSSI, Battery Type) in read-only mode without modifying onboard Hub flash memory, load the HubProfile (STR-01) storing any custom names strictly in localStorage, subscribe to the profile's drive and steer port encoders (>= 10 Hz), Hub Temperature (Port 0x3D), and Battery Level (Property 0x06), log Attached I/O ports (0x04), and enter READY.`
+- **CTL-02:** `WHEN connected, THE VehicleDriver SHALL query all LEGO Wireless Protocol Hub Properties (0x01..0x0D including Advertising Name 0x01, MAC Address 0x0D, FW/HW versions, RSSI, Battery Type) read-only, load the HubProfile (STR-01), set the Hub LED (Port 0x32) to the HubProfile's ledColor, subscribe to the profile's drive and steer port encoders (>= 10 Hz), Hub Temperature (Port 0x3D), and Battery Level (Property 0x06), log Attached I/O ports (0x04), and enter READY.`
 
 ### Calibration Interlock State
 - **CTL-03:** `WHILE in the CALIBRATING state, THE VehicleDriver SHALL reject standard teleop setSpeed() and setSteering() calls so calibration routines (CAL-01..CAL-03) have exclusive actuator control.`
@@ -37,10 +37,10 @@
 - **CTL-08:** `WHEN emergencyStop() is called from any state, THE VehicleDriver SHALL immediately command brake/coast (power = 0) on all drive/steer ports and enter EMERGENCY_STOP; WHEN resetEmergencyStop() is called while BLE is connected, IT SHALL return to READY.`
 
 ### Non-Invasive Hardware Principle
-- **CTL-09:** `THE System SHALL preserve stock physical Hub configuration and firmware state as-is, treating onboard Hub properties and hardware registers as read-only and avoiding any persistent writes, flash modifications, or setting changes to physical Hub hardware.`
+- **CTL-09:** `THE System SHALL preserve stock physical Hub configuration and firmware as-is, limiting writes to volatile per-session commands that reset on Hub power-off (motor output, LED color, port input subscriptions) and never issuing persistent writes (Hub Property Set e.g. Advertising Name 0x01, flash, or firmware changes).`
 
 ---
 
 ## 3. Verification Plan
-1. **Unit / Mock Tests (`tests/control.test.ts`):** Verify LEGO Wireless Protocol byte packet encoding/decoding, state transitions (`CTL-01`..`CTL-08`), `CALIBRATING` teleop lock (`CTL-03`), steering/speed mapping from `HubProfile`, progressive braking ramp, and `> 200ms` watchdog using `MockHubAdapter`.
+1. **Unit / Mock Tests (`tests/lego-protocol-adapter.test.ts`, `tests/control-calibration.test.ts`, `tests/safety.test.ts`):** Verify LEGO Wireless Protocol byte packet encoding/decoding, state transitions (`CTL-01`..`CTL-08`), `CALIBRATING` teleop lock (`CTL-03`), steering/speed mapping from `HubProfile`, progressive braking ramp, and `> 200ms` watchdog using `MockHubAdapter`.
 2. **Bench & Floor Tests:** Verify via the Mobile Web App ([`docs/specs/ui.md`](ui.md)) on Android Chrome with the physical `TechnicHub 88012`.

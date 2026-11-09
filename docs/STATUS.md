@@ -15,4 +15,4 @@
 ---
 
 ## Next Step
-Merge **M1 Task 2** PR, then review specs and execute **M1 Task 3** (LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter`: `CTL-01`, `CTL-02`).
+Merge spec PR **#17** (`CTL-09`, `UI-07`, per-hub `ledColor`), then review specs and execute **M1 Task 3** (LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter`: `CTL-01`, `CTL-02`).

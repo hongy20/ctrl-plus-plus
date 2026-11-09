@@ -35,5 +35,5 @@
 ---
 
 ## 3. Verification Plan
-1. **Unit Tests (`tests/calibration.test.ts`):** Verify stall detection (`|deg/s| < 5` for `250ms`), `centerPos` calculation, `CALIBRATING` lock entry/exit, 2-step `kCal` math from `tireDiameterMm` and `measuredMeters`, and persistence into `HubProfile`.
+1. **Unit Tests (`tests/control-calibration.test.ts`):** Verify stall detection (`|deg/s| < 5` for `250ms`), `centerPos` calculation, `CALIBRATING` lock entry/exit, 2-step `kCal` math from `tireDiameterMm` and `measuredMeters`, and persistence into `HubProfile`.
 2. **Floor Test:** Run steering auto-homing and a 1-meter tape-measure speed run on the physical `42124 Off-Road Buggy`.

@@ -37,10 +37,10 @@
 
 ### GitHub Pages Continuous Deployment
 - **TCH-04:** `WHEN commits are merged to main and quality gates (TCH-01..TCH-03) pass, THE CI Pipeline SHALL upload the built dist/ artifact (actions/upload-pages-artifact) and publish it to GitHub Pages (actions/deploy-pages) over HTTPS.`
-- **TCH-09:** `WHEN building or serving the PWA via Vite and vite-plugin-pwa, THE System SHALL expose the local dev server on all network interfaces (server.host: true), generate an installable web app manifest (display: 'standalone' with 192x192 and 512x512 PNG icons), and configure the production base path (/ctrl-plus-plus/) so static assets, icons, and the service worker resolve cleanly on GitHub Pages.`
+- **TCH-09:** `WHEN building or serving the PWA via Vite and vite-plugin-pwa, THE System SHALL expose the local dev server on all network interfaces (server.host: true), generate an installable web app manifest (display: 'standalone' with 192x192 and 512x512 PNG icons), and configure the base path (/ctrl-plus-plus/) for both dev and production builds so static assets, icons, and the service worker resolve cleanly on GitHub Pages.`
 
 ---
 
 ## 3. Verification Plan
 1. **GitHub Actions Check on PRs:** Verify `.github/workflows/ci-cd.yml` executes automatically on every pull request using `actions/checkout@v7` and `actions/setup-node@v7` (`node-version-file: 'package.json'`) and reports status checks for Doc Line-Cap, Lint, Test, and Build.
-2. **Continuous Deployment Check on main:** Verify `.github/workflows/ci-cd.yml` uploads `dist/` and publishes to GitHub Pages via `actions/deploy-pages@v4` on push to `main`.
+2. **Continuous Deployment Check on main:** Verify `.github/workflows/ci-cd.yml` uploads `dist/` and publishes to GitHub Pages via `actions/configure-pages@v5`, `actions/upload-pages-artifact@v4`, and `actions/deploy-pages@v4` on push to `main`.

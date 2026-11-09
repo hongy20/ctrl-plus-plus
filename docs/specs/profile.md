@@ -24,4 +24,4 @@
 ---
 
 ## 3. Verification Plan
-1. **Unit Tests (`tests/profile.test.ts`):** Verify `listVehicleProfiles()` returns the `42124 Off-Road Buggy` baseline with exact stock hardware parameters (`71.6mm` tire Ø, Port A CCW drive, Port B steer) and `getVehicleProfile()` falls back to `42124` when given an unknown ID.
+1. **Unit Tests (`tests/profile-storage.test.ts`):** Verify `listVehicleProfiles()` returns the `42124 Off-Road Buggy` baseline with exact stock hardware parameters (`71.6mm` tire Ø, Port A CCW drive, Port B steer) and `getVehicleProfile()` falls back to `42124` when given an unknown ID.
