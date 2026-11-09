@@ -28,7 +28,7 @@
 
 ### Calibration & Parameter Persistence
 - **STR-02:** `WHEN saveHubCalibration(hubId, patch) is called after a steering or speed calibration routine, THE System SHALL merge the new calibration values (leftLimit, rightLimit, centerPos, or kCal) into that Hub's persisted HubProfile in localStorage.`
-- **STR-03:** `WHEN updateHubParameters(hubId, patch) is called, THE System SHALL validate and persist user-tweaked overrides (setId, tireDiameterMm, steeringClampRatio, defaultBrakeIntensity) in localStorage so they override the stock preset for that specific Hub.`
+- **STR-03:** `WHEN updateHubParameters(hubId, patch) is called, THE System SHALL validate and persist user-tweaked overrides (name, setId, tireDiameterMm, steeringClampRatio, defaultBrakeIntensity) in localStorage so custom Hub names and tuning persist locally without writing to physical Hub flash.`
 
 ### Remembered Hubs Registry Management
 - **STR-04:** `THE System SHALL provide listRememberedHubs() (sorted by lastConnectedAt descending), resetHubCalibration(hubId) (restoring stock Vehicle Profile defaults and clearing calibration), and forgetHub(hubId) (removing the HubProfile from localStorage).`

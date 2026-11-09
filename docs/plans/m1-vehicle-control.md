@@ -14,7 +14,7 @@
   - Configure Vite & `vite-plugin-pwa` base path (`/ctrl-plus-plus/` in production) and add GitHub Pages deployment job (`actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages` on push to `main`) in `.github/workflows/ci-cd.yml` (`TCH-04`, `TCH-09`).
   - Verify: `npm run lint && npm test && npm run build` (`tests/tech-config.test.ts`)
 
-- [ ] **Task 3: LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter` (`CTL-01`, `CTL-02`)**
+- [ ] **Task 3: LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter` (`CTL-01`, `CTL-02`, `CTL-09`)**
   - Create `src/lego-protocol.ts`: pure functions to encode/decode LEGO Wireless Protocol v3 GATT bytes (Attached I/O `0x04`, Port Input Format Setup `0x41`, Port Value `0x45` for encoders & Hub Temp Port `0x3D`, all Hub Properties `0x01` `0x01..0x0D`, StartSpeed `0x07`, GoToAbsolutePosition `0x0D`, SetHubLed `0x51`).
   - Create `src/hub-adapter.ts`: `WebBleHubAdapter` using `navigator.bluetooth.requestDevice()` (UUID `00001623-1212-efde-1623-785feabcd123`), logging all discovered Hub properties/ports, and `MockHubAdapter` for unit tests.
   - Verify: `npm test` (`tests/lego-protocol-adapter.test.ts`)
@@ -33,7 +33,7 @@
 
 - [ ] **Task 7: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`UI-01`, `UI-04`..`UI-06`)**
   - Build React SPA (`Ctrl++`) with shared `VehicleDriver` context, persistent top status + Battery `%` + Temp `°C` + **E-STOP / Resume** bar, and bottom tabs:
-    - `Connect`: WebBLE connect, inline Hub rename, loaded `HubProfile` summary card with **"Tweak / Calibrate"** button (navigates to `Calibrate` tab), and Remembered Hubs list.
+    - `Connect`: WebBLE connect, inline Hub nickname edit (`localStorage`), loaded `HubProfile` summary card with **"Tweak / Calibrate"** button (navigates to `Calibrate` tab), and Remembered Hubs list.
     - `Calibrate`: Official LEGO Set profile selector (`42124 Off-Road Buggy`), Auto-Calibrate Steering, 2-Step 1m Speed Calibration, and manual parameter inputs (`tireDiameterMm`, `steeringClampRatio`, `defaultBrakeIntensity`).
     - `Debug`: Speed presets, steering slider, progressive brake button, live encoder telemetry, and LEGO Wireless Protocol property/port inspector.
   - Verify: `npm test && npm run build`.
