@@ -31,9 +31,9 @@
   - Add `200ms` telemetry/disconnect watchdog (`EMERGENCY_STOP` → power `0`), `emergencyStop()` / `resetEmergencyStop()`, Screen Wake Lock manager (`navigator.wakeLock.request('screen')`), and synchronous `emergencyStop() + disconnect()` on `visibilityState === 'hidden'` / `pagehide`.
   - Verify: `npm test` (`tests/safety.test.ts`)
 
-- [ ] **Task 7: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`UI-01`, `UI-04`..`UI-06`)**
+- [ ] **Task 7: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`UI-01`, `UI-04`..`UI-07`)**
   - Build React SPA (`Ctrl++`) with shared `VehicleDriver` context, persistent top status + Battery `%` + Temp `°C` + **E-STOP / Resume** bar, and bottom tabs:
-    - `Connect`: WebBLE connect, inline Hub nickname edit (`localStorage`), loaded `HubProfile` summary card with **"Tweak / Calibrate"** button (navigates to `Calibrate` tab), and Remembered Hubs list.
+    - `Connect`: Web Bluetooth compatibility warning banner when unsupported (`UI-07`), WebBLE connect, inline Hub nickname edit (`localStorage`), loaded `HubProfile` summary card with **"Tweak / Calibrate"** button (navigates to `Calibrate` tab), and Remembered Hubs list.
     - `Calibrate`: Official LEGO Set profile selector (`42124 Off-Road Buggy`), Auto-Calibrate Steering, 2-Step 1m Speed Calibration, and manual parameter inputs (`tireDiameterMm`, `steeringClampRatio`, `defaultBrakeIntensity`).
     - `Debug`: Speed presets, steering slider, progressive brake button, live encoder telemetry, and LEGO Wireless Protocol property/port inspector.
   - Verify: `npm test && npm run build`.
