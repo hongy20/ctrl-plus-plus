@@ -14,7 +14,7 @@
   - Configure Vite & `vite-plugin-pwa` base path (`/ctrl-plus-plus/` in dev & production) and add GitHub Pages deployment job (`actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages` on push to `main`) in `.github/workflows/ci-cd.yml` (`TCH-04`, `TCH-09`).
   - Verify: `npm run lint && npm test && npm run build` (`tests/tech-config.test.ts`)
 
-- [ ] **Task 3: LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter` (`CTL-01`, `CTL-02`, `CTL-09`)**
+- [x] **Task 3: LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter` (`CTL-01`, `CTL-02`, `CTL-09`)**
   - Create `src/lego-protocol.ts`: pure functions to encode/decode LEGO Wireless Protocol v3 GATT bytes (Attached I/O `0x04`, Port Input Format Setup `0x41`, Port Value `0x45` for encoders & Hub Temp Port `0x3D`, all Hub Properties `0x01` `0x01..0x0D`, StartSpeed `0x07`, GoToAbsolutePosition `0x0D`, SetHubLed `0x51`).
   - Create `src/hub-adapter.ts`: `WebBleHubAdapter` using `navigator.bluetooth.requestDevice()` (UUID `00001623-1212-efde-1623-785feabcd123`), logging all discovered Hub properties/ports, and `MockHubAdapter` for unit tests.
   - Verify: `npm test` (`tests/lego-protocol-adapter.test.ts`)
