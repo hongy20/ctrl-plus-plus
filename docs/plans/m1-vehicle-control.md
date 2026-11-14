@@ -23,7 +23,7 @@
   - Create `src/profile.ts` & `src/storage.ts`: static catalog of official LEGO sets (`42124 Off-Road Buggy` default with `71.6mm` wheels, Port A CCW drive, Port B steer), add `ledColor` (LWP colors `1..10` tuple per `TCH-06`) to `HubProfile` in `src/contracts.ts`, and `localStorage` CRUD keyed by `hubId` (`getOrCreateHubProfile()`, `saveHubCalibration()`, `updateHubParameters()`, `listRememberedHubs()`, `resetHubCalibration()`, `forgetHub()`).
   - Verify: `npm test` (`tests/profile-storage.test.ts`)
 
-- [ ] **Task 5: Steering/Speed Calibration & Runtime Control (`CAL-01`..`CAL-03`, `CTL-03`..`CTL-06`)**
+- [x] **Task 5: Steering/Speed Calibration & Runtime Control (`CAL-01`..`CAL-03`, `CTL-03`..`CTL-06`)**
   - Create `src/vehicle-driver.ts`: enforces `CALIBRATING` teleop lock (`CTL-03`), implements `calibrateSteering()` (stall detection per `CAL-01`), 2-step `startSpeedCalRun()` + `saveSpeedCal(measuredMeters)`, `setSteering(norm)`, `setSpeed(targetMps)`, and `brake(intensity?)` (smooth deceleration ramp + low-speed hold-brake per `CTL-06`).
   - Verify: `npm test` (`tests/control-calibration.test.ts`)
 
