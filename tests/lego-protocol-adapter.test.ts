@@ -160,6 +160,135 @@ describe('HubAdapter & WebBLE Transport (CTL-01)', () => {
     await adapter.disconnect();
     expect(adapter.isConnected()).toBe(false);
   });
+
+  it('CTL-01: connect() rejects while already connected or connecting', async () => {
+    let resolveRequestDevice!: (value: unknown) => void;
+    const requestDevicePromise = new Promise((resolve) => {
+      resolveRequestDevice = resolve;
+    });
+
+    const mockCharacteristic = {
+      uuid: LWP_CHARACTERISTIC_UUID,
+      startNotifications: vi.fn().mockResolvedValue(undefined),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    const mockService = {
+      getCharacteristic: vi.fn().mockResolvedValue(mockCharacteristic),
+    };
+    const mockGatt = {
+      connected: true,
+      connect: vi.fn().mockImplementation(async () => mockGatt),
+      disconnect: vi.fn(),
+      getPrimaryService: vi.fn().mockResolvedValue(mockService),
+    };
+    const mockDevice = {
+      id: 'hub-ble-02',
+      name: 'TechnicHub Reconnect',
+      gatt: mockGatt,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+
+    const requestDevice = vi.fn().mockReturnValue(requestDevicePromise);
+    vi.stubGlobal('navigator', { bluetooth: { requestDevice } });
+
+    const adapter = new WebBleHubAdapter();
+    const connectPromise1 = adapter.connect();
+
+    // While connecting, another connect() call should reject immediately
+    await expect(adapter.connect()).rejects.toThrow('Already connected or connecting');
+
+    // Finish connecting
+    resolveRequestDevice(mockDevice);
+    await connectPromise1;
+    expect(adapter.isConnected()).toBe(true);
+
+    // While already connected, connect() should reject
+    await expect(adapter.connect()).rejects.toThrow('Already connected or connecting');
+  });
+
+  it('CTL-01: connect() rolls back GATT/listeners when startNotifications() fails', async () => {
+    const gattDisconnect = vi.fn();
+    const charRemoveListener = vi.fn();
+    const deviceRemoveListener = vi.fn();
+
+    const mockCharacteristic = {
+      uuid: LWP_CHARACTERISTIC_UUID,
+      startNotifications: vi.fn().mockRejectedValue(new Error('Notification failure')),
+      addEventListener: vi.fn(),
+      removeEventListener: charRemoveListener,
+    };
+    const mockService = {
+      getCharacteristic: vi.fn().mockResolvedValue(mockCharacteristic),
+    };
+    const mockGatt = {
+      connected: true,
+      connect: vi.fn().mockImplementation(async () => mockGatt),
+      disconnect: gattDisconnect,
+      getPrimaryService: vi.fn().mockResolvedValue(mockService),
+    };
+    const mockDevice = {
+      id: 'hub-ble-03',
+      name: 'TechnicHub Fail',
+      gatt: mockGatt,
+      addEventListener: vi.fn(),
+      removeEventListener: deviceRemoveListener,
+    };
+
+    const requestDevice = vi.fn().mockResolvedValue(mockDevice);
+    vi.stubGlobal('navigator', { bluetooth: { requestDevice } });
+
+    const adapter = new WebBleHubAdapter();
+    await expect(adapter.connect()).rejects.toThrow('Notification failure');
+
+    expect(charRemoveListener).toHaveBeenCalledWith(
+      'characteristicvaluechanged',
+      expect.any(Function),
+    );
+    expect(deviceRemoveListener).toHaveBeenCalledWith(
+      'gattserverdisconnected',
+      expect.any(Function),
+    );
+    expect(gattDisconnect).toHaveBeenCalledTimes(1);
+    expect(adapter.isConnected()).toBe(false);
+    expect(adapter.getHubId()).toBeNull();
+    expect(adapter.getHubName()).toBeNull();
+  });
+
+  it('CTL-01: disconnect() during pending requestDevice() aborts connect()', async () => {
+    let resolveDevice!: (val: unknown) => void;
+    const pendingDevice = new Promise((resolve) => {
+      resolveDevice = resolve;
+    });
+
+    const mockDevice = {
+      id: 'hub-ble-04',
+      name: 'TechnicHub Abort',
+      gatt: {
+        connected: false,
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        getPrimaryService: vi.fn(),
+      },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+
+    const requestDevice = vi.fn().mockReturnValue(pendingDevice);
+    vi.stubGlobal('navigator', { bluetooth: { requestDevice } });
+
+    const adapter = new WebBleHubAdapter();
+    const connectPromise = adapter.connect();
+
+    await adapter.disconnect();
+
+    resolveDevice(mockDevice);
+    await expect(connectPromise).rejects.toThrow('Connection aborted');
+    expect(adapter.isConnected()).toBe(false);
+    expect(adapter.getHubId()).toBeNull();
+    expect(adapter.getHubName()).toBeNull();
+  });
 });
 
 describe('LEGO Wireless Protocol v3 Codec (CTL-02)', () => {
@@ -244,6 +373,19 @@ describe('LEGO Wireless Protocol v3 Codec (CTL-02)', () => {
     });
     expect(typeof (hwDecoded as { value: unknown }).value).toBe('string');
     expect(((hwDecoded as { value: string }).value).length).toBeGreaterThan(0);
+  });
+
+  it('CTL-02: decodeLwpMessage decodes FW/HW versions using LWP v3 BCD decimal digits', () => {
+    const bcdPkt = new Uint8Array([
+      0x09, 0x00, 0x01, 0x03, 0x06, 0x10, 0x15, 0x37, 0x17,
+    ]);
+    const decoded = decodeLwpMessage(bcdPkt);
+    expect(decoded).toMatchObject({
+      messageType: 0x01,
+      property: 0x03,
+      operation: 0x06,
+      value: '1.7.37.1510',
+    });
   });
 
   it('CTL-02: decodeLwpMessage decodes Attached I/O (0x04) for attached and detached ports', () => {

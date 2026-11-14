@@ -9,6 +9,7 @@ interface BluetoothRemoteGATTCharacteristicLike extends EventTarget {
   startNotifications(): Promise<unknown>;
   writeValueWithResponse?(value: Uint8Array | BufferSource): Promise<void>;
   writeValue?(value: Uint8Array | BufferSource): Promise<void>;
+  removeEventListener(type: string, callback: EventListenerOrEventListenerObject | null): void;
 }
 
 interface BluetoothRemoteGATTServerLike {
@@ -24,6 +25,7 @@ interface BluetoothDeviceLike extends EventTarget {
   id: string;
   name?: string;
   gatt?: BluetoothRemoteGATTServerLike;
+  removeEventListener(type: string, callback: EventListenerOrEventListenerObject | null): void;
 }
 
 interface NavigatorWithBluetooth {
@@ -40,53 +42,140 @@ export class WebBleHubAdapter implements HubAdapter {
   private device: BluetoothDeviceLike | null = null;
   private characteristic: BluetoothRemoteGATTCharacteristicLike | null = null;
   private connected = false;
+  private connecting = false;
+  private connectGeneration = 0;
   private hubId: string | null = null;
   private hubName: string | null = null;
   private messageListeners = new Set<(packet: Uint8Array) => void>();
   private disconnectListeners = new Set<() => void>();
 
   async connect(): Promise<void> {
+    if (this.connected || this.connecting) {
+      throw new Error('Already connected or connecting');
+    }
+
     const nav = typeof navigator !== 'undefined' ? (navigator as NavigatorWithBluetooth) : null;
     if (!nav?.bluetooth) {
       throw new Error('Web Bluetooth is not supported in this environment');
     }
 
-    if (this.device) {
-      this.device.removeEventListener('gattserverdisconnected', this.handleGattDisconnect);
+    this.connecting = true;
+    const generation = ++this.connectGeneration;
+
+    let localDevice: BluetoothDeviceLike | null = null;
+    let localGatt: BluetoothRemoteGATTServerLike | null = null;
+    let localChar: BluetoothRemoteGATTCharacteristicLike | null = null;
+
+    try {
+      const device = await nav.bluetooth.requestDevice({
+        filters: [{ services: [LWP_SERVICE_UUID] }],
+      });
+
+      if (this.connectGeneration !== generation) {
+        throw new Error('Connection aborted');
+      }
+
+      localDevice = device;
+      this.device = device;
+      this.hubId = device.id;
+      this.hubName = device.name ?? null;
+
+      device.addEventListener('gattserverdisconnected', this.handleGattDisconnect);
+
+      const gatt = await device.gatt?.connect();
+      if (this.connectGeneration !== generation) {
+        throw new Error('Connection aborted');
+      }
+      if (!gatt) {
+        throw new Error('Failed to connect to GATT server');
+      }
+      localGatt = gatt;
+
+      const service = await gatt.getPrimaryService(LWP_SERVICE_UUID);
+      if (this.connectGeneration !== generation) {
+        throw new Error('Connection aborted');
+      }
+
+      const characteristic = await service.getCharacteristic(LWP_CHARACTERISTIC_UUID);
+      if (this.connectGeneration !== generation) {
+        throw new Error('Connection aborted');
+      }
+      localChar = characteristic;
+      this.characteristic = characteristic;
+
+      characteristic.addEventListener(
+        'characteristicvaluechanged',
+        this.handleCharacteristicValueChanged,
+      );
+
+      await characteristic.startNotifications();
+      if (this.connectGeneration !== generation) {
+        throw new Error('Connection aborted');
+      }
+
+      this.connected = true;
+    } catch (error) {
+      if (localChar) {
+        localChar.removeEventListener(
+          'characteristicvaluechanged',
+          this.handleCharacteristicValueChanged,
+        );
+      }
+      if (localDevice) {
+        localDevice.removeEventListener('gattserverdisconnected', this.handleGattDisconnect);
+      }
+      if (localGatt) {
+        try {
+          localGatt.disconnect();
+        } catch {
+          // ignore error on rollback disconnect
+        }
+      }
+      this.device = null;
+      this.characteristic = null;
+      this.hubId = null;
+      this.hubName = null;
+      this.connected = false;
+      throw error;
+    } finally {
+      this.connecting = false;
     }
-
-    const device = await nav.bluetooth.requestDevice({
-      filters: [{ services: [LWP_SERVICE_UUID] }],
-    });
-
-    this.device = device;
-    this.hubId = device.id;
-    this.hubName = device.name ?? null;
-
-    device.addEventListener('gattserverdisconnected', this.handleGattDisconnect);
-
-    const gatt = await device.gatt?.connect();
-    if (!gatt) {
-      throw new Error('Failed to connect to GATT server');
-    }
-
-    const service = await gatt.getPrimaryService(LWP_SERVICE_UUID);
-    const characteristic = await service.getCharacteristic(LWP_CHARACTERISTIC_UUID);
-    this.characteristic = characteristic;
-
-    characteristic.addEventListener(
-      'characteristicvaluechanged',
-      this.handleCharacteristicValueChanged,
-    );
-    await characteristic.startNotifications();
-    this.connected = true;
   }
 
   async disconnect(): Promise<void> {
-    if (this.device?.gatt) {
-      this.device.gatt.disconnect();
+    this.connectGeneration += 1;
+    this.connecting = false;
+
+    const device = this.device;
+    const characteristic = this.characteristic;
+
+    if (characteristic) {
+      characteristic.removeEventListener(
+        'characteristicvaluechanged',
+        this.handleCharacteristicValueChanged,
+      );
+      this.characteristic = null;
     }
-    this.handleGattDisconnect();
+
+    if (device) {
+      device.removeEventListener('gattserverdisconnected', this.handleGattDisconnect);
+      if (device.gatt) {
+        device.gatt.disconnect();
+      }
+    }
+
+    this.device = null;
+    this.hubId = null;
+    this.hubName = null;
+
+    const wasConnected = this.connected;
+    this.connected = false;
+
+    if (wasConnected) {
+      for (const listener of this.disconnectListeners) {
+        listener();
+      }
+    }
   }
 
   isConnected(): boolean {
@@ -128,6 +217,16 @@ export class WebBleHubAdapter implements HubAdapter {
   }
 
   private handleGattDisconnect = (): void => {
+    if (this.characteristic) {
+      this.characteristic.removeEventListener(
+        'characteristicvaluechanged',
+        this.handleCharacteristicValueChanged,
+      );
+      this.characteristic = null;
+    }
+    if (this.device) {
+      this.device.removeEventListener('gattserverdisconnected', this.handleGattDisconnect);
+    }
     if (!this.connected) {
       return;
     }
@@ -157,6 +256,7 @@ export interface MockHubAdapterOptions {
 export class MockHubAdapter implements HubAdapter {
   public sentPackets: Uint8Array[] = [];
   private connected = false;
+  private connecting = false;
   private hubId: string | null;
   private hubName: string | null;
   private messageListeners = new Set<(packet: Uint8Array) => void>();
@@ -168,11 +268,15 @@ export class MockHubAdapter implements HubAdapter {
   }
 
   async connect(): Promise<void> {
+    if (this.connected || this.connecting) {
+      throw new Error('Already connected or connecting');
+    }
     this.connected = true;
   }
 
   async disconnect(): Promise<void> {
     this.connected = false;
+    this.connecting = false;
   }
 
   isConnected(): boolean {

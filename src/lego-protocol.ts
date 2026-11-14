@@ -120,8 +120,9 @@ export function decodeLwpMessage(packet: Uint8Array): DecodedLwpMessage {
       const b3 = packet[payloadStart + 3];
       const major = (b3 >> 4) & 0x0f;
       const minor = b3 & 0x0f;
-      const bugfix = b2;
-      const build = b0 | (b1 << 8);
+      const bcd = (byte: number): number => ((byte >> 4) & 0x0f) * 10 + (byte & 0x0f);
+      const bugfix = bcd(b2);
+      const build = bcd(b1) * 100 + bcd(b0);
       value = `${major}.${minor}.${bugfix}.${build}`;
     } else if (property === 0x05) {
       const view = new DataView(packet.buffer, packet.byteOffset, packet.byteLength);
