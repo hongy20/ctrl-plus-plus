@@ -27,7 +27,7 @@
   - Create `src/vehicle-driver.ts`: enforces `CALIBRATING` teleop lock (`CTL-03`), implements `calibrateSteering()` (stall detection per `CAL-01`), 2-step `startSpeedCalRun()` + `saveSpeedCal(measuredMeters)`, `setSteering(norm)`, `setSpeed(targetMps)`, and `brake(intensity?)` (smooth deceleration ramp + low-speed hold-brake per `CTL-06`).
   - Verify: `npm test` (`tests/control-calibration.test.ts`)
 
-- [ ] **Task 6: Vehicle Watchdog & Mobile Lifecycle Guards (`CTL-07`, `CTL-08`, `UI-02`, `UI-03`)**
+- [x] **Task 6: Vehicle Watchdog & Mobile Lifecycle Guards (`CTL-07`, `CTL-08`, `UI-02`, `UI-03`)**
   - Add telemetry/disconnect watchdog (`CTL-07`) (`EMERGENCY_STOP` → power `0`), `emergencyStop()` / `resetEmergencyStop()`, Screen Wake Lock manager (`navigator.wakeLock.request('screen')`), and synchronous `emergencyStop() + disconnect()` on `visibilityState === 'hidden'` / `pagehide`.
   - Verify: `npm test` (`tests/safety.test.ts`)
 

@@ -111,7 +111,9 @@ export function decodeLwpMessage(packet: Uint8Array): DecodedLwpMessage {
     const payloadStart = headerOffset + 5;
     let value: string | number | Uint8Array;
 
-    if (property === 0x01) {
+    if (payloadStart >= packet.length) {
+      value = '';
+    } else if (property === 0x01) {
       value = new TextDecoder().decode(packet.subarray(payloadStart));
     } else if (property === 0x03 || property === 0x04) {
       const b0 = packet[payloadStart];

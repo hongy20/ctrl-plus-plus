@@ -39,7 +39,7 @@ export class VehicleDriver {
     (port: number, value: number, timestampMs: number) => void
   >();
   private currentSpeedMps = 0;
-  private currentMotorSpeed = 0;
+  private watchdogTimer: ReturnType<typeof setTimeout> | null = null;
   private cleanupListeners: Array<() => void> = [];
 
   constructor(adapter: HubAdapter) {
@@ -112,6 +112,7 @@ export class VehicleDriver {
   }
 
   async disconnect(): Promise<void> {
+    this.clearWatchdog();
     try {
       const profile = this.getHubProfile();
       if (profile && this.adapter.isConnected()) {
@@ -138,6 +139,7 @@ export class VehicleDriver {
     }
 
     this.state = 'CALIBRATING';
+    this.armWatchdog();
     const vehicle = getVehicleProfile(profile.setId);
     const steerPort = vehicle.steerPort;
 
@@ -156,8 +158,10 @@ export class VehicleDriver {
         centerPos,
       });
 
+      this.clearWatchdog();
       this.state = 'READY';
     } catch (error) {
+      this.clearWatchdog();
       this.state = 'READY';
       throw error;
     }
@@ -176,14 +180,13 @@ export class VehicleDriver {
     }
 
     this.state = 'CALIBRATING';
+    this.armWatchdog();
     const vehicle = getVehicleProfile(profile.setId);
     const drivePort = vehicle.drivePort;
 
-    await this.adapter.send(encodeStartSpeed(drivePort, 40));
+    let startAngle: number | null = this.telemetry.get(drivePort)?.angleDeg ?? null;
 
-    return new Promise<void>((resolve) => {
-      let startAngle: number | null = this.telemetry.get(drivePort)?.angleDeg ?? null;
-
+    const promise = new Promise<void>((resolve) => {
       const onPortValue = (p: number, value: number) => {
         if (p !== drivePort) return;
         if (startAngle === null) {
@@ -192,7 +195,7 @@ export class VehicleDriver {
         const deltaDeg = Math.abs(value - startAngle);
         if (deltaDeg >= SPEED_CAL_TARGET_DEG) {
           this.portValueListeners.delete(onPortValue);
-          this.adapter.send(encodeStartSpeed(drivePort, 0)).then(() => {
+          void this.adapter.send(encodeStartSpeed(drivePort, 0)).then(() => {
             resolve();
           });
         }
@@ -200,6 +203,10 @@ export class VehicleDriver {
 
       this.portValueListeners.add(onPortValue);
     });
+
+    void this.adapter.send(encodeStartSpeed(drivePort, 40));
+
+    return promise;
   }
 
   async saveSpeedCal(measuredMeters: number): Promise<void> {
@@ -226,6 +233,7 @@ export class VehicleDriver {
     const kCal = measuredMeters / theoreticalMeters;
 
     this.hubProfile = saveHubCalibration(profile.hubId, { kCal });
+    this.clearWatchdog();
     this.state = 'READY';
   }
 
@@ -292,8 +300,8 @@ export class VehicleDriver {
     await this.adapter.send(encodeStartSpeed(drivePort, motorSpeed));
 
     this.currentSpeedMps = targetMps;
-    this.currentMotorSpeed = motorSpeed;
     this.state = 'DRIVING';
+    this.armWatchdog();
   }
 
   async brake(intensity?: number): Promise<void> {
@@ -324,8 +332,8 @@ export class VehicleDriver {
 
     return new Promise<void>((resolve, reject) => {
       if (Math.abs(speedMps) < HOLD_BRAKE_SPEED_MPS) {
+        this.clearWatchdog();
         this.currentSpeedMps = 0;
-        this.currentMotorSpeed = 0;
         this.state = 'READY';
         this.adapter
           .send(encodeStartSpeed(drivePort, 127))
@@ -335,6 +343,7 @@ export class VehicleDriver {
       }
 
       const timer = setInterval(() => {
+        this.resetWatchdog();
         if (speedMps > 0) {
           speedMps = Math.max(0, speedMps - deltaMps);
         } else {
@@ -343,8 +352,8 @@ export class VehicleDriver {
 
         if (Math.abs(speedMps) < HOLD_BRAKE_SPEED_MPS) {
           clearInterval(timer);
+          this.clearWatchdog();
           this.currentSpeedMps = 0;
-          this.currentMotorSpeed = 0;
           this.state = 'READY';
           this.adapter
             .send(encodeStartSpeed(drivePort, 127))
@@ -367,7 +376,6 @@ export class VehicleDriver {
         motorSpeed = Math.max(-100, Math.min(100, motorSpeed));
 
         this.currentSpeedMps = speedMps;
-        this.currentMotorSpeed = motorSpeed;
 
         this.adapter.send(encodeStartSpeed(drivePort, motorSpeed)).catch(reject);
       }, tickMs);
@@ -375,18 +383,17 @@ export class VehicleDriver {
   }
 
   async emergencyStop(): Promise<void> {
+    this.clearWatchdog();
     this.state = 'EMERGENCY_STOP';
     this.currentSpeedMps = 0;
-    this.currentMotorSpeed = 0;
     const profile = this.getHubProfile();
-    if (profile) {
-      const vehicle = getVehicleProfile(profile.setId);
-      try {
-        await this.adapter.send(encodeStartSpeed(vehicle.drivePort, 0));
-        await this.adapter.send(encodeStartSpeed(vehicle.steerPort, 0));
-      } catch {
-        // ignore send error during emergency stop
-      }
+    const vehicle = getVehicleProfile(profile?.setId);
+    try {
+      const p1 = this.adapter.send(encodeStartSpeed(vehicle.drivePort, 0));
+      const p2 = this.adapter.send(encodeStartSpeed(vehicle.steerPort, 0));
+      await Promise.all([p1, p2]);
+    } catch {
+      // ignore send error during emergency stop
     }
   }
 
@@ -395,19 +402,43 @@ export class VehicleDriver {
       return;
     }
     if (!this.adapter.isConnected()) {
-      this.state = 'DISCONNECTED';
-      return;
+      throw new Error('Cannot resetEmergencyStop: BLE disconnected');
     }
     this.state = 'READY';
   }
 
   destroy(): void {
+    this.clearWatchdog();
     for (const off of this.cleanupListeners) {
       off();
     }
     this.cleanupListeners = [];
     this.portValueListeners.clear();
   }
+
+  private armWatchdog(): void {
+    this.clearWatchdog();
+    this.watchdogTimer = setTimeout(this.triggerWatchdog, WATCHDOG_TIMEOUT_MS);
+  }
+
+  private resetWatchdog(): void {
+    if (this.state === 'DRIVING' || this.state === 'CALIBRATING') {
+      this.armWatchdog();
+    }
+  }
+
+  private clearWatchdog(): void {
+    if (this.watchdogTimer !== null) {
+      clearTimeout(this.watchdogTimer);
+      this.watchdogTimer = null;
+    }
+  }
+
+  private triggerWatchdog = (): void => {
+    if (this.state === 'DRIVING' || this.state === 'CALIBRATING') {
+      void this.emergencyStop();
+    }
+  };
 
   private async detectStall(port: number, speed: number): Promise<number> {
     await this.adapter.send(encodeStartSpeed(port, speed, 40));
@@ -454,6 +485,7 @@ export class VehicleDriver {
       this.portValueListeners.add(onPortValue);
 
       const intervalId = setInterval(() => {
+        this.resetWatchdog();
         const now = Date.now();
         if (lastPos !== null) {
           if (stallStartTime === null) {
@@ -467,15 +499,25 @@ export class VehicleDriver {
 
   private handleMessage = (packet: Uint8Array): void => {
     const msg = decodeLwpMessage(packet);
-    if (msg.messageType === 0x04) {
+    if (msg.messageType === 0x04 && 'attached' in msg && typeof msg.port === 'number') {
       console.info('Attached I/O notification:', msg);
       this.attachedPorts.set(msg.port, {
-        attached: msg.attached,
-        ioTypeId: msg.ioTypeId,
+        attached: Boolean(msg.attached),
+        ioTypeId: typeof msg.ioTypeId === 'number' ? msg.ioTypeId : undefined,
       });
-    } else if (msg.messageType === 0x01) {
+    } else if (
+      msg.messageType === 0x01 &&
+      'property' in msg &&
+      typeof msg.property === 'number'
+    ) {
       this.hubProperties.set(msg.property, msg.value);
-    } else if (msg.messageType === 0x45) {
+    } else if (
+      msg.messageType === 0x45 &&
+      'port' in msg &&
+      typeof msg.port === 'number' &&
+      typeof msg.value === 'number'
+    ) {
+      this.resetWatchdog();
       const now = Date.now();
       const prev = this.telemetry.get(msg.port);
       const dt = prev ? (now - prev.timestampMs) / 1000 : 0;
@@ -493,6 +535,7 @@ export class VehicleDriver {
   };
 
   private handleDisconnect = (): void => {
+    this.clearWatchdog();
     if (this.state === 'DRIVING' || this.state === 'CALIBRATING') {
       this.state = 'EMERGENCY_STOP';
     } else {
