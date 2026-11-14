@@ -3,7 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
-import { MockHubAdapter } from '../src/mock-hub-adapter';
+import { MockHubAdapter } from './mock-hub-adapter';
 import { encodeSetHubLed } from '../src/lego-protocol';
 import { listRememberedHubs, saveHubCalibration } from '../src/storage';
 import { LOW_BATTERY_CUTOFF_PCT } from '../src/vehicle-driver';

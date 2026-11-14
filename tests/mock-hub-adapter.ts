@@ -1,4 +1,4 @@
-import type { HubAdapter } from './contracts';
+import type { HubAdapter } from '../src/contracts';
 
 export interface MockHubAdapterOptions {
   hubId?: string;

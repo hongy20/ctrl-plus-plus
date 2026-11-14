@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MockHubAdapter } from '../src/mock-hub-adapter';
+import { MockHubAdapter } from './mock-hub-adapter';
 import { attachMobileLifecycleGuards } from '../src/lifecycle';
 import { VehicleDriver, WATCHDOG_TIMEOUT_MS, LOW_BATTERY_CUTOFF_PCT } from '../src/vehicle-driver';
 

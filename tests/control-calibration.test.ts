@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MockHubAdapter } from '../src/mock-hub-adapter';
+import { MockHubAdapter } from './mock-hub-adapter';
 import { decodeLwpMessage } from '../src/lego-protocol';
 import { listRememberedHubs, saveHubCalibration, updateHubParameters } from '../src/storage';
 import {
