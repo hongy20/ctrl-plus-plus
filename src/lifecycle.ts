@@ -1,10 +1,15 @@
 import type { VehicleDriver } from './vehicle-driver';
 
-export interface MobileLifecycleTargets {
-  driver: VehicleDriver;
+export interface WakeLockSentinelLike {
+  release(): Promise<void>;
+  released?: boolean;
+}
+
+export interface MobileLifecycleOptions {
+  driver: Pick<VehicleDriver, 'emergencyStop' | 'disconnect'>;
   navigatorObj?: {
     wakeLock?: {
-      request(type: 'screen'): Promise<{ released: boolean; release(): Promise<void> }>;
+      request(type: 'screen'): Promise<WakeLockSentinelLike>;
     };
   };
   documentObj?: {
@@ -18,64 +23,72 @@ export interface MobileLifecycleTargets {
   };
 }
 
-export function attachMobileLifecycleGuards(options: MobileLifecycleTargets): () => void {
+export function attachMobileLifecycleGuards(options: MobileLifecycleOptions): () => void {
   const { driver } = options;
-  const nav =
-    options.navigatorObj ??
-    (typeof navigator !== 'undefined'
-      ? (navigator as MobileLifecycleTargets['navigatorObj'])
-      : undefined);
-  const doc =
-    options.documentObj ??
-    (typeof document !== 'undefined'
-      ? (document as MobileLifecycleTargets['documentObj'])
-      : undefined);
-  const win =
-    options.windowObj ??
-    (typeof window !== 'undefined'
-      ? (window as MobileLifecycleTargets['windowObj'])
-      : undefined);
+  const nav = options.navigatorObj ?? (typeof navigator !== 'undefined' ? navigator : undefined);
+  const doc = options.documentObj ?? (typeof document !== 'undefined' ? document : undefined);
+  const win = options.windowObj ?? (typeof window !== 'undefined' ? window : undefined);
 
-  let currentSentinel: { released: boolean; release(): Promise<void> } | null = null;
+  let cleanedUp = false;
+  let activeSentinel: WakeLockSentinelLike | null = null;
 
-  const requestWakeLock = async (): Promise<void> => {
-    if (!nav?.wakeLock?.request) {
-      return;
-    }
+  const acquireWakeLock = async (): Promise<void> => {
+    if (cleanedUp) return;
+    if (doc && doc.visibilityState !== 'visible') return;
     try {
-      currentSentinel = await nav.wakeLock.request('screen');
+      if (nav?.wakeLock?.request) {
+        const sentinel = await nav.wakeLock.request('screen');
+        if (cleanedUp) {
+          void sentinel.release().catch(() => {});
+        } else {
+          activeSentinel = sentinel;
+        }
+      }
     } catch {
-      // Ignore wake lock rejection on unsupported platforms
+      // Ignore unsupported or denied wake lock requests
     }
   };
 
-  if (doc?.visibilityState === 'visible') {
-    void requestWakeLock();
-  }
-
   const handleVisibilityChange = (): void => {
-    if (doc?.visibilityState === 'visible') {
-      void requestWakeLock();
-    } else if (doc?.visibilityState === 'hidden') {
+    if (cleanedUp) return;
+    if (doc?.visibilityState === 'hidden') {
       void driver.emergencyStop();
       void driver.disconnect();
+    } else if (doc?.visibilityState === 'visible') {
+      void acquireWakeLock();
     }
   };
 
   const handlePageHide = (): void => {
+    if (cleanedUp) return;
     void driver.emergencyStop();
     void driver.disconnect();
   };
 
-  doc?.addEventListener('visibilitychange', handleVisibilityChange);
-  win?.addEventListener('pagehide', handlePageHide);
+  if (doc?.addEventListener) {
+    doc.addEventListener('visibilitychange', handleVisibilityChange);
+  }
+
+  if (win?.addEventListener) {
+    win.addEventListener('pagehide', handlePageHide);
+  }
+
+  if (!doc || doc.visibilityState === 'visible') {
+    void acquireWakeLock();
+  }
 
   return () => {
-    doc?.removeEventListener('visibilitychange', handleVisibilityChange);
-    win?.removeEventListener('pagehide', handlePageHide);
-    if (currentSentinel && !currentSentinel.released) {
-      void currentSentinel.release();
-      currentSentinel = null;
+    if (cleanedUp) return;
+    cleanedUp = true;
+    if (doc?.removeEventListener) {
+      doc.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
+    if (win?.removeEventListener) {
+      win.removeEventListener('pagehide', handlePageHide);
+    }
+    if (activeSentinel) {
+      void activeSentinel.release().catch(() => {});
+      activeSentinel = null;
     }
   };
 }

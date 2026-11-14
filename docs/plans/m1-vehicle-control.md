@@ -31,7 +31,7 @@
   - Add telemetry/disconnect watchdog (`CTL-07`) (`EMERGENCY_STOP` → power `0`), `emergencyStop()` / `resetEmergencyStop()`, Screen Wake Lock manager (`navigator.wakeLock.request('screen')`), and synchronous `emergencyStop() + disconnect()` on `visibilityState === 'hidden'` / `pagehide`.
   - Verify: `npm test` (`tests/safety.test.ts`)
 
-- [ ] **Task 7: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`UI-01`, `UI-04`..`UI-07`)**
+- [x] **Task 7: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`UI-01`, `UI-04`..`UI-07`)**
   - Build React SPA (`Ctrl++`) with shared `VehicleDriver` context, persistent top status + Battery `%` + Temp `°C` + **E-STOP / Resume** bar, and bottom tabs:
     - `Connect`: Web Bluetooth compatibility warning banner when unsupported (`UI-07`), WebBLE connect, inline Hub nickname edit + LED color picker (`localStorage`), loaded `HubProfile` summary card with **"Tweak / Calibrate"** button (navigates to `Calibrate` tab), and Remembered Hubs list.
     - `Calibrate`: Official LEGO Set profile selector (`42124 Off-Road Buggy`), Auto-Calibrate Steering, 2-Step 1m Speed Calibration, and manual parameter inputs (`tireDiameterMm`, `steeringClampRatio`, `defaultBrakeIntensity`).

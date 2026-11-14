@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MockHubAdapter } from '../src/hub-adapter';
 import { attachMobileLifecycleGuards } from '../src/lifecycle';
-import { VehicleDriver, WATCHDOG_TIMEOUT_MS } from '../src/vehicle-driver';
+import { VehicleDriver, WATCHDOG_TIMEOUT_MS, LOW_BATTERY_CUTOFF_PCT } from '../src/vehicle-driver';
 
 function createMemoryStorage(): Storage {
   const store = new Map<string, string>();
@@ -291,5 +291,45 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
     windowObj.dispatchPageHide();
     expect(emergencyStopSpy).not.toHaveBeenCalled();
     expect(disconnectSpy).not.toHaveBeenCalled();
+  });
+
+  it('CTL-10: stops driving/calibration, cuts motor power to 0, and rejects new drive/calibration commands when Hub Battery drops below LOW_BATTERY_CUTOFF_PCT', async () => {
+    const makeBatteryPacket = (pct: number): Uint8Array =>
+      new Uint8Array([0x06, 0x00, 0x01, 0x06, 0x06, pct]);
+
+    await driver.connect();
+    await driver.setSpeed(1.0);
+    expect(driver.getState()).toBe('DRIVING');
+
+    adapter.sentPackets = [];
+    adapter.emitMessage(makeBatteryPacket(LOW_BATTERY_CUTOFF_PCT - 1));
+    await Promise.resolve();
+
+    expect(driver.getState()).not.toBe('DRIVING');
+    expect(getStartSpeedPackets(adapter.sentPackets, 0x00).some((c) => c.speed === 0)).toBe(true);
+    expect(getStartSpeedPackets(adapter.sentPackets, 0x01).some((c) => c.speed === 0)).toBe(true);
+
+    await expect(driver.setSpeed(1.0)).rejects.toThrow();
+    await expect(driver.setSteering(0.5)).rejects.toThrow();
+    await expect(driver.calibrateSteering()).rejects.toThrow();
+    await expect(driver.startSpeedCalRun()).rejects.toThrow();
+
+    const calAdapter = new MockHubAdapter();
+    const calDriver = new VehicleDriver(calAdapter);
+    await calDriver.connect();
+    const calPromise = calDriver.startSpeedCalRun();
+    expect(calDriver.getState()).toBe('CALIBRATING');
+
+    calAdapter.sentPackets = [];
+    calAdapter.emitMessage(makeBatteryPacket(LOW_BATTERY_CUTOFF_PCT - 1));
+    await Promise.resolve();
+
+    expect(calDriver.getState()).not.toBe('CALIBRATING');
+    expect(getStartSpeedPackets(calAdapter.sentPackets, 0x00).some((c) => c.speed === 0)).toBe(true);
+    expect(getStartSpeedPackets(calAdapter.sentPackets, 0x01).some((c) => c.speed === 0)).toBe(true);
+    await expect(calDriver.setSpeed(1.0)).rejects.toThrow();
+
+    void calPromise;
+    calDriver.destroy();
   });
 });
