@@ -248,5 +248,3 @@ export class WebBleHubAdapter implements HubAdapter {
   };
 }
 
-export { MockHubAdapter, type MockHubAdapterOptions } from './mock-hub-adapter';
-

@@ -1,6 +1,7 @@
-import type { HubAdapter, HubProfile, VehicleProfile } from '../contracts';
-import { encodeStartSpeed } from '../lego-protocol';
-import { BRAKE_TICK_HZ, HOLD_BRAKE_SPEED_MPS } from './constants';
+import type { DriverState, HubAdapter, HubProfile, VehicleProfile } from '../contracts';
+import { encodeGoToAbsolutePosition, encodeStartSpeed } from '../lego-protocol';
+import { getVehicleProfile } from '../profile';
+import { BRAKE_TICK_HZ, HOLD_BRAKE_SPEED_MPS, LOW_BATTERY_CUTOFF_PCT } from './constants';
 
 export function calculateTargetSteerPos(
   angleNorm: number,
@@ -135,4 +136,90 @@ export function executeProgressiveBrake(
       adapter.send(encodeStartSpeed(vehicle.drivePort, motorSpeed)).catch(reject);
     }, tickMs);
   });
+}
+
+export function assertOperational(
+  action: 'calibrateSteering' | 'startSpeedCalRun' | 'setSteering' | 'setSpeed' | 'brake',
+  state: DriverState,
+  isLowBattery: boolean,
+): void {
+  if (action !== 'brake' && isLowBattery) {
+    throw new Error(`Cannot ${action}: hub battery below ${LOW_BATTERY_CUTOFF_PCT}%`);
+  }
+  if (state === 'CALIBRATING') {
+    const tag = action === 'setSteering' || action === 'setSpeed' || action === 'brake' ? ' (CTL-03)' : '';
+    throw new Error(`Cannot ${action} while in CALIBRATING state${tag}`);
+  }
+  if (state !== 'READY' && state !== 'DRIVING') {
+    throw new Error(`Cannot ${action} in state ${state}`);
+  }
+}
+
+export async function executeSteer(
+  adapter: HubAdapter,
+  profile: HubProfile,
+  angleNorm: number,
+): Promise<void> {
+  const vehicle = getVehicleProfile(profile.setId);
+  const absPos = calculateTargetSteerPos(angleNorm, profile, vehicle);
+  await adapter.send(
+    encodeGoToAbsolutePosition(vehicle.steerPort, absPos, 100, 100, 127),
+  );
+}
+
+export async function executeDrive(
+  adapter: HubAdapter,
+  profile: HubProfile,
+  targetMps: number,
+): Promise<void> {
+  const vehicle = getVehicleProfile(profile.setId);
+  const motorSpeed = calculateMotorSpeed(targetMps, profile, vehicle);
+  await adapter.send(encodeStartSpeed(vehicle.drivePort, motorSpeed));
+}
+
+export interface BrakeRoutineOptions {
+  adapter: HubAdapter;
+  profile: HubProfile;
+  currentSpeedMps: number;
+  intensity?: number;
+  isDriving: () => boolean;
+  onTick: () => void;
+  onSpeedStep: (speedMps: number) => void;
+  onHoldBrake: () => Promise<void>;
+  onAbortRegistered: (abort: () => void) => void;
+}
+
+export function runBrakeRoutine(options: BrakeRoutineOptions): Promise<void> {
+  const {
+    adapter,
+    profile,
+    currentSpeedMps,
+    intensity,
+    isDriving,
+    onTick,
+    onSpeedStep,
+    onHoldBrake,
+    onAbortRegistered,
+  } = options;
+  const vehicle = getVehicleProfile(profile.setId);
+  const actualIntensity =
+    intensity ?? profile.defaultBrakeIntensity ?? vehicle.defaultBrakeIntensity;
+
+  return executeProgressiveBrake(
+    adapter,
+    vehicle,
+    () => profile,
+    currentSpeedMps,
+    actualIntensity,
+    {
+      isDriving,
+      onTick,
+      onSpeedStep,
+      onHoldBrake: async () => {
+        await onHoldBrake();
+        await adapter.send(encodeStartSpeed(vehicle.drivePort, 127));
+      },
+      onAbortRegistered,
+    },
+  );
 }

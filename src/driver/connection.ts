@@ -30,8 +30,12 @@ export async function terminateHubConnection(
 
 export async function stopAllMotors(
   adapter: HubAdapter,
-  vehicle: VehicleProfile,
+  vehicleOrProfile?: VehicleProfile | HubProfile | null,
 ): Promise<void> {
+  const vehicle =
+    vehicleOrProfile && 'drivePort' in vehicleOrProfile
+      ? vehicleOrProfile
+      : getVehicleProfile(vehicleOrProfile?.setId);
   try {
     await Promise.all([
       adapter.send(encodeStartSpeed(vehicle.drivePort, 0)),

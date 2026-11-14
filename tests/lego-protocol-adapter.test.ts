@@ -4,8 +4,8 @@ import {
   LWP_SERVICE_UUID,
   LWP_CHARACTERISTIC_UUID,
   WebBleHubAdapter,
-  MockHubAdapter,
 } from '../src/hub-adapter';
+import { MockHubAdapter } from '../src/mock-hub-adapter';
 import {
   encodeHubProperty,
   encodePortInputFormatSetup,

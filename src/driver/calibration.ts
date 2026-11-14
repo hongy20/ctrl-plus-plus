@@ -3,6 +3,7 @@ import {
   encodeGoToAbsolutePosition,
   encodeStartSpeed,
 } from '../lego-protocol';
+import { getVehicleProfile } from '../profile';
 import { saveHubCalibration } from '../storage';
 import {
   SPEED_CAL_TARGET_DEG,
@@ -229,4 +230,21 @@ export function calculateSpeedCalKCal(
   const circumferenceM = Math.PI * (tireDiameterMm / 1000);
   const theoreticalMeters = revolutions * circumferenceM;
   return measuredMeters / theoreticalMeters;
+}
+
+export function applySpeedCalibration(
+  profile: HubProfile,
+  measuredMeters: number,
+): HubProfile {
+  if (
+    typeof measuredMeters !== 'number' ||
+    measuredMeters <= 0 ||
+    !Number.isFinite(measuredMeters)
+  ) {
+    throw new Error('Invalid measuredMeters: must be a positive finite number');
+  }
+  const vehicle = getVehicleProfile(profile.setId);
+  const tireDiameterMm = profile.tireDiameterMm ?? vehicle.stockTireDiameterMm;
+  const kCal = calculateSpeedCalKCal(measuredMeters, tireDiameterMm);
+  return saveHubCalibration(profile.hubId, { kCal });
 }
