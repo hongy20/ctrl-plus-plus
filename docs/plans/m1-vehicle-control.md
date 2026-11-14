@@ -24,11 +24,11 @@
   - Verify: `npm test` (`tests/profile-storage.test.ts`)
 
 - [ ] **Task 5: Steering/Speed Calibration & Runtime Control (`CAL-01`..`CAL-03`, `CTL-03`..`CTL-06`)**
-  - Create `src/vehicle-driver.ts`: enforces `CALIBRATING` teleop lock (`CTL-03`), implements `calibrateSteering()` (`|deg/s| < 5` for `250ms`), 2-step `startSpeedCalRun()` + `saveSpeedCal(measuredMeters)`, `setSteering(norm)`, `setSpeed(targetMps)`, and `brake(intensity?)` (`20 Hz` smooth deceleration ramp + low-speed hold `< 0.05 m/s`).
+  - Create `src/vehicle-driver.ts`: enforces `CALIBRATING` teleop lock (`CTL-03`), implements `calibrateSteering()` (stall detection per `CAL-01`), 2-step `startSpeedCalRun()` + `saveSpeedCal(measuredMeters)`, `setSteering(norm)`, `setSpeed(targetMps)`, and `brake(intensity?)` (smooth deceleration ramp + low-speed hold-brake per `CTL-06`).
   - Verify: `npm test` (`tests/control-calibration.test.ts`)
 
 - [ ] **Task 6: Vehicle Watchdog & Mobile Lifecycle Guards (`CTL-07`, `CTL-08`, `UI-02`, `UI-03`)**
-  - Add `200ms` telemetry/disconnect watchdog (`EMERGENCY_STOP` → power `0`), `emergencyStop()` / `resetEmergencyStop()`, Screen Wake Lock manager (`navigator.wakeLock.request('screen')`), and synchronous `emergencyStop() + disconnect()` on `visibilityState === 'hidden'` / `pagehide`.
+  - Add telemetry/disconnect watchdog (`CTL-07`) (`EMERGENCY_STOP` → power `0`), `emergencyStop()` / `resetEmergencyStop()`, Screen Wake Lock manager (`navigator.wakeLock.request('screen')`), and synchronous `emergencyStop() + disconnect()` on `visibilityState === 'hidden'` / `pagehide`.
   - Verify: `npm test` (`tests/safety.test.ts`)
 
 - [ ] **Task 7: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`UI-01`, `UI-04`..`UI-07`)**

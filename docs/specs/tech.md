@@ -30,7 +30,7 @@
 - **TCH-10:** `WHEN npm test runs, THE Test Runner (vitest run --coverage via @vitest/coverage-v8) SHALL enforce a minimum 80% coverage threshold (lines, functions, branches, statements) across core source modules and fail the build if coverage drops below threshold.`
 
 ### Latest Production Runtime, Dependency & Code Conventions
-- **TCH-05:** `THE CI Pipeline and package.json SHALL always use the latest production/LTS releases (Node.js >=26 via engines.node, actions/checkout@v7, actions/setup-node@v7, and npm packages installed via npm i <pkg> rather than hardcoded legacy versions).`
+- **TCH-05:** `THE CI Pipeline and package.json SHALL use the latest production/LTS releases of Node.js, GitHub Actions, and npm packages (added via npm i <pkg>, never hand-written from memory, and kept current by TCH-07), with package.json and .github/workflows/ci-cd.yml as the single source of truth for exact versions so specs and plans never restate them.`
 - **TCH-06:** `WHEN defining a runtime constant list and its TypeScript union type, THE Codebase SHALL define the tuple once with as const and derive the type via (typeof X)[number] without duplicating string literals or using enum (enforced via ESLint no-restricted-syntax).`
 - **TCH-07:** `WHEN the maintenance routine runs (weekly via GitHub Dependabot or via npm update && npm audit), THE System SHALL upgrade runtime, GitHub Actions, and npm dependencies to their latest production releases and verify all lint, test, and build gates pass with zero deprecated or vulnerable packages.`
 - **TCH-08:** `THE package.json SHALL declare the Node.js runtime version in engines.node matching the major version of @types/node, and .github/workflows/ci-cd.yml SHALL resolve its Node.js version directly from package.json via node-version-file: 'package.json' as the single source of truth.`
@@ -42,5 +42,5 @@
 ---
 
 ## 3. Verification Plan
-1. **GitHub Actions Check on PRs:** Verify `.github/workflows/ci-cd.yml` executes automatically on every pull request using `actions/checkout@v7` and `actions/setup-node@v7` (`node-version-file: 'package.json'`) and reports status checks for Doc Line-Cap, Lint, Test, and Build.
-2. **Continuous Deployment Check on main:** Verify `.github/workflows/ci-cd.yml` uploads `dist/` and publishes to GitHub Pages via `actions/configure-pages@v5`, `actions/upload-pages-artifact@v4`, and `actions/deploy-pages@v4` on push to `main`.
+1. **GitHub Actions Check on PRs:** Verify `.github/workflows/ci-cd.yml` executes automatically on every pull request with Node.js resolved from `package.json` (`node-version-file: 'package.json'`) and reports status checks for Doc Line-Cap, Lint, Test, and Build.
+2. **Continuous Deployment Check on main:** Verify `.github/workflows/ci-cd.yml` uploads `dist/` and publishes to GitHub Pages via `actions/configure-pages`, `actions/upload-pages-artifact`, and `actions/deploy-pages` on push to `main`.
