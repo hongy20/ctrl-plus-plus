@@ -9,7 +9,7 @@ The official **LEGO Control+** and **Powered Up** apps for remote-controlled veh
 
 ## 🛠️ Hardware
 
-**Ctrl++** supports any LEGO vehicle powered by a **LEGO Powered Up / Control+ Bluetooth Hub** through built-in vehicle profiles and customizable port/wheel settings. I use my stock **[LEGO Technic 42124 Off-Road Buggy](https://www.lego.com/en-us/product/off-road-buggy-42124)** for debugging and testing:
+**Ctrl++** supports any LEGO vehicle powered by a **LEGO Powered Up / Control+ Bluetooth Hub** (via the [LEGO Wireless Protocol v3](https://lego.github.io/lego-ble-wireless-protocol-docs/index.html)) through built-in vehicle profiles and customizable port/wheel settings. I use my stock **[LEGO Technic 42124 Off-Road Buggy](https://www.lego.com/en-us/product/off-road-buggy-42124)** for debugging and testing:
 
 <p align="center">
   <img src="https://cdn.rebrickable.com/media/sets/42124-1.jpg" alt="LEGO Technic 42124 Off-Road Buggy" width="420" />

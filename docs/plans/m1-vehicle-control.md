@@ -19,7 +19,7 @@
   - Create `src/hub-adapter.ts`: `WebBleHubAdapter` using `navigator.bluetooth.requestDevice()` (UUID `00001623-1212-efde-1623-785feabcd123`), logging all discovered Hub properties/ports, and `MockHubAdapter` for unit tests.
   - Verify: `npm test` (`tests/lego-protocol-adapter.test.ts`)
 
-- [ ] **Task 4: Official Vehicle Profiles & Per-Hub Storage (`PRF-01`, `PRF-02`, `STR-01`..`STR-04`)**
+- [x] **Task 4: Official Vehicle Profiles & Per-Hub Storage (`PRF-01`, `PRF-02`, `STR-01`..`STR-04`)**
   - Create `src/profile.ts` & `src/storage.ts`: static catalog of official LEGO sets (`42124 Off-Road Buggy` default with `71.6mm` wheels, Port A CCW drive, Port B steer), add `ledColor` (LWP colors `1..10` tuple per `TCH-06`) to `HubProfile` in `src/contracts.ts`, and `localStorage` CRUD keyed by `hubId` (`getOrCreateHubProfile()`, `saveHubCalibration()`, `updateHubParameters()`, `listRememberedHubs()`, `resetHubCalibration()`, `forgetHub()`).
   - Verify: `npm test` (`tests/profile-storage.test.ts`)
 
