@@ -5,11 +5,34 @@ import type {
   MotorTelemetry,
 } from './contracts';
 import {
-  decodeLwpMessage,
+  calculateSpeedCalKCal,
+  executeSteeringCalibration,
+  runSpeedCalRun,
+} from './driver/calibration';
+import {
+  BRAKE_TICK_HZ,
+  HOLD_BRAKE_SPEED_MPS,
+  LOW_BATTERY_CUTOFF_PCT,
+  STALL_HOLD_MS,
+  STALL_SPEED_DEG_S,
+  TELEMETRY_MIN_HZ,
+  WATCHDOG_TIMEOUT_MS,
+} from './driver/constants';
+import {
+  calculateMotorSpeed,
+  calculateTargetSteerPos,
+  executeProgressiveBrake,
+} from './driver/control';
+import { sendHubInitHandshake } from './driver/handshake';
+import {
+  TelemetryManager,
+} from './driver/telemetry';
+import {
+  AbortRegistry,
+  WatchdogTimer,
+} from './driver/watchdog';
+import {
   encodeGoToAbsolutePosition,
-  encodeHubProperty,
-  encodePortInputFormatSetup,
-  encodeSetHubLed,
   encodeStartSpeed,
 } from './lego-protocol';
 import { getVehicleProfile } from './profile';
@@ -19,36 +42,30 @@ import {
   saveHubCalibration,
 } from './storage';
 
-export const STALL_SPEED_DEG_S = 5;
-export const STALL_HOLD_MS = 250;
-export const TELEMETRY_MIN_HZ = 10;
-export const BRAKE_TICK_HZ = 20;
-export const HOLD_BRAKE_SPEED_MPS = 0.05;
-export const WATCHDOG_TIMEOUT_MS = 200;
-export const LOW_BATTERY_CUTOFF_PCT = 10;
-
-const SPEED_CAL_TARGET_DEG = 3600;
+export {
+  BRAKE_TICK_HZ,
+  HOLD_BRAKE_SPEED_MPS,
+  LOW_BATTERY_CUTOFF_PCT,
+  STALL_HOLD_MS,
+  STALL_SPEED_DEG_S,
+  TELEMETRY_MIN_HZ,
+  WATCHDOG_TIMEOUT_MS,
+} from './driver/constants';
 
 export class VehicleDriver {
   private adapter: HubAdapter;
   private state: DriverState = 'DISCONNECTED';
   private hubProfile: HubProfile | null = null;
-  private telemetry = new Map<number, MotorTelemetry>();
-  private attachedPorts = new Map<number, { attached: boolean; ioTypeId?: number }>();
-  private hubProperties = new Map<number, unknown>();
-  private portValueListeners = new Set<
-    (port: number, value: number, timestampMs: number) => void
-  >();
+  private telemetryMgr = new TelemetryManager();
+  private aborts = new AbortRegistry();
+  private watchdog: WatchdogTimer;
   private updateListeners = new Set<() => void>();
   private currentSpeedMps = 0;
-  private watchdogTimer: ReturnType<typeof setTimeout> | null = null;
-  private activeBrakeAbort: (() => void) | null = null;
-  private activeSpeedCalAbort: (() => void) | null = null;
-  private activeStallAbort: (() => void) | null = null;
   private cleanupListeners: Array<() => void> = [];
 
   constructor(adapter: HubAdapter) {
     this.adapter = adapter;
+    this.watchdog = new WatchdogTimer(this.triggerWatchdog);
     const offMessage = this.adapter.onMessage(this.handleMessage);
     const offDisconnect = this.adapter.onDisconnect(this.handleDisconnect);
     this.cleanupListeners.push(offMessage, offDisconnect);
@@ -71,28 +88,23 @@ export class VehicleDriver {
   }
 
   getTelemetry(port?: number): MotorTelemetry | Map<number, MotorTelemetry> | undefined {
-    if (port !== undefined) {
-      return this.telemetry.get(port);
-    }
-    return new Map(this.telemetry);
+    return this.telemetryMgr.getTelemetry(port);
   }
 
   getAttachedPorts(): Map<number, { attached: boolean; ioTypeId?: number }> {
-    return new Map(this.attachedPorts);
+    return this.telemetryMgr.getAttachedPorts();
   }
 
   getHubProperties(): Map<number, unknown> {
-    return new Map(this.hubProperties);
+    return this.telemetryMgr.getHubProperties();
   }
 
   getBatteryLevel(): number | null {
-    const batt = this.hubProperties.get(0x06);
-    return typeof batt === 'number' ? batt : null;
+    return this.telemetryMgr.getBatteryLevel();
   }
 
   isLowBatteryCutoff(): boolean {
-    const batt = this.getBatteryLevel();
-    return batt !== null && batt < LOW_BATTERY_CUTOFF_PCT;
+    return this.telemetryMgr.isLowBatteryCutoff();
   }
 
   subscribe(listener: () => void): () => void {
@@ -120,17 +132,7 @@ export class VehicleDriver {
       const hubName = this.adapter.getHubName() ?? 'Technic Hub';
       this.hubProfile = getOrCreateHubProfile(hubId, hubName);
 
-      for (let prop = 0x01; prop <= 0x0d; prop++) {
-        await this.adapter.send(encodeHubProperty(prop, 0x05));
-      }
-
-      await this.adapter.send(encodeHubProperty(0x06, 0x02));
-      await this.adapter.send(encodeSetHubLed(this.hubProfile.ledColor, 0x32));
-
-      const vehicle = getVehicleProfile(this.hubProfile.setId);
-      for (const port of [vehicle.drivePort, vehicle.steerPort, 0x3d]) {
-        await this.adapter.send(encodePortInputFormatSetup(port, 0x00, 1, true));
-      }
+      await sendHubInitHandshake(this.adapter, this.hubProfile);
 
       this.state = 'READY';
       this.notify();
@@ -142,8 +144,8 @@ export class VehicleDriver {
   }
 
   async disconnect(): Promise<void> {
-    this.clearWatchdog();
-    this.abortActiveLoops();
+    this.watchdog.clear();
+    this.aborts.abortAll();
     try {
       const profile = this.getHubProfile();
       if (profile && this.adapter.isConnected()) {
@@ -159,52 +161,31 @@ export class VehicleDriver {
   }
 
   async calibrateSteering(): Promise<void> {
-    if (this.isLowBatteryCutoff()) {
-      throw new Error(`Cannot calibrateSteering: hub battery below ${LOW_BATTERY_CUTOFF_PCT}%`);
-    }
-    if (this.state === 'CALIBRATING') {
-      throw new Error('Cannot calibrateSteering while in CALIBRATING state');
-    }
-    if (this.state !== 'READY' && this.state !== 'DRIVING') {
-      throw new Error(`Cannot calibrateSteering in state ${this.state}`);
-    }
-    const profile = this.getHubProfile();
-    if (!profile) {
-      throw new Error('No active hub profile');
-    }
+    this.ensureOperational('calibrateSteering');
+    const profile = this.requireProfile();
 
     this.state = 'CALIBRATING';
     this.notify();
-    this.armWatchdog();
+    this.watchdog.arm();
     const vehicle = getVehicleProfile(profile.setId);
-    const steerPort = vehicle.steerPort;
 
     try {
-      const leftLimit = await this.detectStall(steerPort, -30);
-      if (this.state !== 'CALIBRATING') {
-        return;
-      }
-      const rightLimit = await this.detectStall(steerPort, 30);
-      if (this.state !== 'CALIBRATING') {
-        return;
-      }
-      const centerPos = (leftLimit + rightLimit) / 2;
-
-      await this.adapter.send(
-        encodeGoToAbsolutePosition(steerPort, centerPos, 100, 100, 127),
-      );
-
-      this.hubProfile = saveHubCalibration(profile.hubId, {
-        leftLimit,
-        rightLimit,
-        centerPos,
+      const result = await executeSteeringCalibration({
+        adapter: this.adapter,
+        steerPort: vehicle.steerPort,
+        addPortValueListener: (cb) => this.telemetryMgr.addPortValueListener(cb),
+        onTick: () => this.resetWatchdog(),
+        onAbortRegistered: (abort) => this.aborts.setStallAbort(abort),
+        isCalibrating: () => this.state === 'CALIBRATING',
       });
-
-      this.clearWatchdog();
+      if (result) {
+        this.hubProfile = saveHubCalibration(profile.hubId, result);
+      }
+      this.watchdog.clear();
       this.state = 'READY';
       this.notify();
     } catch (error) {
-      this.clearWatchdog();
+      this.watchdog.clear();
       if (this.state === 'CALIBRATING') {
         this.state = 'READY';
         this.notify();
@@ -214,62 +195,23 @@ export class VehicleDriver {
   }
 
   async startSpeedCalRun(): Promise<void> {
-    if (this.isLowBatteryCutoff()) {
-      throw new Error(`Cannot startSpeedCalRun: hub battery below ${LOW_BATTERY_CUTOFF_PCT}%`);
-    }
-    if (this.state === 'CALIBRATING') {
-      throw new Error('Cannot startSpeedCalRun while in CALIBRATING state');
-    }
-    if (this.state !== 'READY' && this.state !== 'DRIVING') {
-      throw new Error(`Cannot startSpeedCalRun in state ${this.state}`);
-    }
-    const profile = this.getHubProfile();
-    if (!profile) {
-      throw new Error('No active hub profile');
-    }
+    this.ensureOperational('startSpeedCalRun');
+    const profile = this.requireProfile();
 
     this.state = 'CALIBRATING';
     this.notify();
-    this.armWatchdog();
+    this.watchdog.arm();
     const vehicle = getVehicleProfile(profile.setId);
     const drivePort = vehicle.drivePort;
 
-    let startAngle: number | null = this.telemetry.get(drivePort)?.angleDeg ?? null;
-
-    const promise = new Promise<void>((resolve) => {
-      const cleanup = () => {
-        this.portValueListeners.delete(onPortValue);
-        if (this.activeSpeedCalAbort === abort) {
-          this.activeSpeedCalAbort = null;
-        }
-      };
-
-      const abort = () => {
-        cleanup();
-        resolve();
-      };
-      this.activeSpeedCalAbort = abort;
-
-      const onPortValue = (p: number, value: number) => {
-        if (p !== drivePort) return;
-        if (startAngle === null) {
-          startAngle = value;
-        }
-        const deltaDeg = Math.abs(value - startAngle);
-        if (deltaDeg >= SPEED_CAL_TARGET_DEG) {
-          cleanup();
-          void this.adapter.send(encodeStartSpeed(drivePort, 0)).then(() => {
-            resolve();
-          });
-        }
-      };
-
-      this.portValueListeners.add(onPortValue);
+    const angle = (this.telemetryMgr.getTelemetry(drivePort) as MotorTelemetry | undefined)?.angleDeg ?? null;
+    return runSpeedCalRun({
+      adapter: this.adapter,
+      drivePort,
+      initialAngle: angle,
+      addPortValueListener: (cb) => this.telemetryMgr.addPortValueListener(cb),
+      onAbortRegistered: (abort) => this.aborts.setSpeedCalAbort(abort),
     });
-
-    void this.adapter.send(encodeStartSpeed(drivePort, 40));
-
-    return promise;
   }
 
   async saveSpeedCal(measuredMeters: number): Promise<void> {
@@ -283,206 +225,80 @@ export class VehicleDriver {
     ) {
       throw new Error('Invalid measuredMeters: must be a positive finite number');
     }
-    const profile = this.getHubProfile();
-    if (!profile) {
-      throw new Error('No active hub profile');
-    }
+    const profile = this.requireProfile();
 
     const vehicle = getVehicleProfile(profile.setId);
     const tireDiameterMm = profile.tireDiameterMm ?? vehicle.stockTireDiameterMm;
-    const revolutions = SPEED_CAL_TARGET_DEG / 360;
-    const circumferenceM = Math.PI * (tireDiameterMm / 1000);
-    const theoreticalMeters = revolutions * circumferenceM;
-    const kCal = measuredMeters / theoreticalMeters;
+    const kCal = calculateSpeedCalKCal(measuredMeters, tireDiameterMm);
 
     this.hubProfile = saveHubCalibration(profile.hubId, { kCal });
-    this.clearWatchdog();
+    this.watchdog.clear();
     this.state = 'READY';
     this.notify();
   }
 
   async setSteering(angleNorm: number): Promise<void> {
-    if (this.isLowBatteryCutoff()) {
-      throw new Error(`Cannot setSteering: hub battery below ${LOW_BATTERY_CUTOFF_PCT}%`);
-    }
-    if (this.state === 'CALIBRATING') {
-      throw new Error('Cannot setSteering while in CALIBRATING state (CTL-03)');
-    }
-    if (this.state !== 'READY' && this.state !== 'DRIVING') {
-      throw new Error(`Cannot setSteering in state ${this.state}`);
-    }
-    const profile = this.getHubProfile();
-    if (!profile) {
-      throw new Error('No active hub profile');
-    }
+    this.ensureOperational('setSteering');
+    const profile = this.requireProfile();
 
     const vehicle = getVehicleProfile(profile.setId);
-    const steerPort = vehicle.steerPort;
-    const clampedNorm = Math.max(-1.0, Math.min(1.0, angleNorm));
+    const absPos = calculateTargetSteerPos(angleNorm, profile, vehicle);
 
-    const leftLimit = profile.calibration.leftLimit ?? -100;
-    const rightLimit = profile.calibration.rightLimit ?? 100;
-    const centerPos = profile.calibration.centerPos ?? (leftLimit + rightLimit) / 2;
-    const clampRatio = profile.steeringClampRatio ?? vehicle.defaultSteeringClampRatio;
-
-    let targetPos: number;
-    if (clampedNorm >= 0) {
-      targetPos = centerPos + clampedNorm * (rightLimit - centerPos) * clampRatio;
-    } else {
-      targetPos = centerPos + clampedNorm * (centerPos - leftLimit) * clampRatio;
-    }
-
-    const absPos = Math.round(targetPos);
     await this.adapter.send(
-      encodeGoToAbsolutePosition(steerPort, absPos, 100, 100, 127),
+      encodeGoToAbsolutePosition(vehicle.steerPort, absPos, 100, 100, 127),
     );
   }
 
   async setSpeed(targetMps: number): Promise<void> {
-    if (this.isLowBatteryCutoff()) {
-      throw new Error(`Cannot setSpeed: hub battery below ${LOW_BATTERY_CUTOFF_PCT}%`);
-    }
-    if (this.state === 'CALIBRATING') {
-      throw new Error('Cannot setSpeed while in CALIBRATING state (CTL-03)');
-    }
-    if (this.state !== 'READY' && this.state !== 'DRIVING') {
-      throw new Error(`Cannot setSpeed in state ${this.state}`);
-    }
-    const profile = this.getHubProfile();
-    if (!profile) {
-      throw new Error('No active hub profile');
-    }
+    this.ensureOperational('setSpeed');
+    const profile = this.requireProfile();
 
     const vehicle = getVehicleProfile(profile.setId);
-    const drivePort = vehicle.drivePort;
-    const polarity = vehicle.drivePolarity;
-    const kCal = profile.calibration.kCal || 1.0;
-    const tireDiameterMm = profile.tireDiameterMm || vehicle.stockTireDiameterMm;
+    const motorSpeed = calculateMotorSpeed(targetMps, profile, vehicle);
 
-    const circumferenceM = Math.PI * (tireDiameterMm / 1000);
-    const nominalMaxRps = 12;
-    const maxSpeedMps = nominalMaxRps * circumferenceM * kCal;
-
-    const dutyPercent = (targetMps / maxSpeedMps) * 100;
-    let motorSpeed = Math.round(dutyPercent * polarity);
-    motorSpeed = Math.max(-100, Math.min(100, motorSpeed));
-
-    await this.adapter.send(encodeStartSpeed(drivePort, motorSpeed));
+    await this.adapter.send(encodeStartSpeed(vehicle.drivePort, motorSpeed));
 
     this.currentSpeedMps = targetMps;
     this.state = 'DRIVING';
     this.notify();
-    this.armWatchdog();
+    this.watchdog.arm();
   }
 
   async brake(intensity?: number): Promise<void> {
-    if (this.state === 'CALIBRATING') {
-      throw new Error('Cannot brake while in CALIBRATING state (CTL-03)');
-    }
-    if (this.state !== 'READY' && this.state !== 'DRIVING') {
-      throw new Error(`Cannot brake in state ${this.state}`);
-    }
-    const profile = this.getHubProfile();
-    if (!profile) {
-      throw new Error('No active hub profile');
-    }
+    this.ensureOperational('brake');
+    const profile = this.requireProfile();
 
     const vehicle = getVehicleProfile(profile.setId);
-    const drivePort = vehicle.drivePort;
     const actualIntensity =
       intensity ?? profile.defaultBrakeIntensity ?? vehicle.defaultBrakeIntensity;
-    const clampedIntensity = Math.max(0.01, Math.min(1.0, actualIntensity));
 
-    const tickMs = 1000 / BRAKE_TICK_HZ;
-    const aMax = 2.0;
-    const a = clampedIntensity * aMax;
-    const dt = 1 / BRAKE_TICK_HZ;
-    const deltaMps = a * dt;
-
-    let speedMps = this.currentSpeedMps;
-
-    return new Promise<void>((resolve, reject) => {
-      let timer: ReturnType<typeof setInterval> | null = null;
-
-      const cleanup = () => {
-        if (timer !== null) {
-          clearInterval(timer);
-          timer = null;
-        }
-        if (this.activeBrakeAbort === abort) {
-          this.activeBrakeAbort = null;
-        }
-      };
-
-      const abort = () => {
-        cleanup();
-        resolve();
-      };
-      this.activeBrakeAbort = abort;
-
-      if (Math.abs(speedMps) < HOLD_BRAKE_SPEED_MPS) {
-        cleanup();
-        this.clearWatchdog();
-        this.currentSpeedMps = 0;
-        this.state = 'READY';
-        this.notify();
-        this.adapter
-          .send(encodeStartSpeed(drivePort, 127))
-          .then(() => resolve())
-          .catch(reject);
-        return;
-      }
-
-      timer = setInterval(() => {
-        if (this.state !== 'DRIVING') {
-          cleanup();
-          resolve();
-          return;
-        }
-
-        this.resetWatchdog();
-        if (speedMps > 0) {
-          speedMps = Math.max(0, speedMps - deltaMps);
-        } else {
-          speedMps = Math.min(0, speedMps + deltaMps);
-        }
-
-        if (Math.abs(speedMps) < HOLD_BRAKE_SPEED_MPS) {
-          cleanup();
-          this.clearWatchdog();
+    return executeProgressiveBrake(
+      this.adapter,
+      vehicle,
+      () => this.getHubProfile() ?? profile,
+      this.currentSpeedMps,
+      actualIntensity,
+      {
+        isDriving: () => this.state === 'DRIVING',
+        onTick: () => this.resetWatchdog(),
+        onSpeedStep: (speed) => {
+          this.currentSpeedMps = speed;
+        },
+        onHoldBrake: async () => {
+          this.watchdog.clear();
           this.currentSpeedMps = 0;
           this.state = 'READY';
           this.notify();
-          this.adapter
-            .send(encodeStartSpeed(drivePort, 127))
-            .then(() => resolve())
-            .catch(reject);
-          return;
-        }
-
-        const polarity = vehicle.drivePolarity;
-        const currentProfile = this.getHubProfile() ?? profile;
-        const kCal = currentProfile.calibration.kCal || 1.0;
-        const tireDiameterMm =
-          currentProfile.tireDiameterMm || vehicle.stockTireDiameterMm;
-        const circumferenceM = Math.PI * (tireDiameterMm / 1000);
-        const nominalMaxRps = 12;
-        const maxSpeedMps = nominalMaxRps * circumferenceM * kCal;
-
-        const dutyPercent = (speedMps / maxSpeedMps) * 100;
-        let motorSpeed = Math.round(dutyPercent * polarity);
-        motorSpeed = Math.max(-100, Math.min(100, motorSpeed));
-
-        this.currentSpeedMps = speedMps;
-
-        this.adapter.send(encodeStartSpeed(drivePort, motorSpeed)).catch(reject);
-      }, tickMs);
-    });
+          await this.adapter.send(encodeStartSpeed(vehicle.drivePort, 127));
+        },
+        onAbortRegistered: (abort) => this.aborts.setBrakeAbort(abort),
+      },
+    );
   }
 
   async emergencyStop(): Promise<void> {
-    this.clearWatchdog();
-    this.abortActiveLoops();
+    this.watchdog.clear();
+    this.aborts.abortAll();
     this.state = 'EMERGENCY_STOP';
     this.notify();
     this.currentSpeedMps = 0;
@@ -509,31 +325,19 @@ export class VehicleDriver {
   }
 
   destroy(): void {
-    this.clearWatchdog();
-    this.abortActiveLoops();
+    this.watchdog.clear();
+    this.aborts.abortAll();
     for (const off of this.cleanupListeners) {
       off();
     }
     this.cleanupListeners = [];
-    this.portValueListeners.clear();
+    this.telemetryMgr.clear();
     this.updateListeners.clear();
-  }
-
-  private armWatchdog(): void {
-    this.clearWatchdog();
-    this.watchdogTimer = setTimeout(this.triggerWatchdog, WATCHDOG_TIMEOUT_MS);
   }
 
   private resetWatchdog(): void {
     if (this.state === 'DRIVING' || this.state === 'CALIBRATING') {
-      this.armWatchdog();
-    }
-  }
-
-  private clearWatchdog(): void {
-    if (this.watchdogTimer !== null) {
-      clearTimeout(this.watchdogTimer);
-      this.watchdogTimer = null;
+      this.watchdog.arm();
     }
   }
 
@@ -543,146 +347,47 @@ export class VehicleDriver {
     }
   };
 
-  private abortActiveLoops(): void {
-    if (this.activeBrakeAbort) {
-      const abort = this.activeBrakeAbort;
-      this.activeBrakeAbort = null;
-      abort();
+  private ensureOperational(
+    action: 'calibrateSteering' | 'startSpeedCalRun' | 'setSteering' | 'setSpeed' | 'brake',
+  ): void {
+    if (action !== 'brake' && this.isLowBatteryCutoff()) {
+      throw new Error(`Cannot ${action}: hub battery below ${LOW_BATTERY_CUTOFF_PCT}%`);
     }
-    if (this.activeSpeedCalAbort) {
-      const abort = this.activeSpeedCalAbort;
-      this.activeSpeedCalAbort = null;
-      abort();
+    if (this.state === 'CALIBRATING') {
+      const tag = action === 'setSteering' || action === 'setSpeed' || action === 'brake' ? ' (CTL-03)' : '';
+      throw new Error(`Cannot ${action} while in CALIBRATING state${tag}`);
     }
-    if (this.activeStallAbort) {
-      const abort = this.activeStallAbort;
-      this.activeStallAbort = null;
-      abort();
+    if (this.state !== 'READY' && this.state !== 'DRIVING') {
+      throw new Error(`Cannot ${action} in state ${this.state}`);
     }
   }
 
-  private async detectStall(port: number, speed: number): Promise<number> {
-    await this.adapter.send(encodeStartSpeed(port, speed, 40));
-
-    return new Promise<number>((resolve) => {
-      let lastPos: number | null = null;
-      let lastSampleTime = Date.now();
-      let stallStartTime: number | null = null;
-      let intervalId: ReturnType<typeof setInterval> | null = null;
-
-      const cleanup = () => {
-        if (intervalId !== null) {
-          clearInterval(intervalId);
-          intervalId = null;
-        }
-        this.portValueListeners.delete(onPortValue);
-        if (this.activeStallAbort === abort) {
-          this.activeStallAbort = null;
-        }
-      };
-
-      const abort = () => {
-        cleanup();
-        resolve(lastPos ?? 0);
-      };
-      this.activeStallAbort = abort;
-
-      const checkStall = (now: number) => {
-        if (stallStartTime !== null && now - stallStartTime >= STALL_HOLD_MS) {
-          cleanup();
-          resolve(lastPos ?? 0);
-        }
-      };
-
-      const onPortValue = (p: number, value: number, now: number) => {
-        if (p !== port) return;
-        if (lastPos === null) {
-          lastPos = value;
-          lastSampleTime = now;
-          stallStartTime = now;
-        } else {
-          const dt = (now - lastSampleTime) / 1000;
-          if (dt > 0) {
-            const speedDegPerSec = Math.abs(value - lastPos) / dt;
-            if (speedDegPerSec >= STALL_SPEED_DEG_S) {
-              stallStartTime = null;
-            } else if (stallStartTime === null) {
-              stallStartTime = lastSampleTime;
-            }
-          }
-          lastPos = value;
-          lastSampleTime = now;
-        }
-        checkStall(now);
-      };
-
-      this.portValueListeners.add(onPortValue);
-
-      intervalId = setInterval(() => {
-        this.resetWatchdog();
-        const now = Date.now();
-        if (lastPos !== null) {
-          if (stallStartTime === null) {
-            stallStartTime = lastSampleTime;
-          }
-          checkStall(now);
-        }
-      }, 25);
-    });
+  private requireProfile(): HubProfile {
+    const profile = this.getHubProfile();
+    if (!profile) {
+      throw new Error('No active hub profile');
+    }
+    return profile;
   }
 
   private handleMessage = (packet: Uint8Array): void => {
-    const msg = decodeLwpMessage(packet);
-    if (msg.messageType === 0x04 && 'attached' in msg && typeof msg.port === 'number') {
-      console.info('Attached I/O notification:', msg);
-      this.attachedPorts.set(msg.port, {
-        attached: Boolean(msg.attached),
-        ioTypeId: typeof msg.ioTypeId === 'number' ? msg.ioTypeId : undefined,
-      });
-      this.notify();
-    } else if (
-      msg.messageType === 0x01 &&
-      'property' in msg &&
-      typeof msg.property === 'number'
-    ) {
-      this.hubProperties.set(msg.property, msg.value);
-      if (
-        msg.property === 0x06 &&
-        typeof msg.value === 'number' &&
-        msg.value < LOW_BATTERY_CUTOFF_PCT
-      ) {
+    const changed = this.telemetryMgr.handlePacket(
+      packet,
+      () => this.resetWatchdog(),
+      () => {
         if (this.state === 'DRIVING' || this.state === 'CALIBRATING') {
           void this.emergencyStop();
         }
-      }
-      this.notify();
-    } else if (
-      msg.messageType === 0x45 &&
-      'port' in msg &&
-      typeof msg.port === 'number' &&
-      typeof msg.value === 'number'
-    ) {
-      this.resetWatchdog();
-      const now = Date.now();
-      const prev = this.telemetry.get(msg.port);
-      const dt = prev ? (now - prev.timestampMs) / 1000 : 0;
-      const speedDegPerSec = prev && dt > 0 ? (msg.value - prev.angleDeg) / dt : 0;
-      this.telemetry.set(msg.port, {
-        port: msg.port,
-        angleDeg: msg.value,
-        speedDegPerSec,
-        timestampMs: now,
-      });
-      for (const listener of Array.from(this.portValueListeners)) {
-        listener(msg.port, msg.value, now);
-      }
+      },
+    );
+    if (changed) {
       this.notify();
     }
   };
 
   private handleDisconnect = (): void => {
-    this.clearWatchdog();
-    this.abortActiveLoops();
+    this.watchdog.clear();
+    this.aborts.abortAll();
     if (this.state === 'DRIVING' || this.state === 'CALIBRATING') {
       this.state = 'EMERGENCY_STOP';
     } else {
