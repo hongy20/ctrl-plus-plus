@@ -11,29 +11,29 @@
 
 - [x] **Task 2: Node.js Engine Sync & GitHub Pages Continuous Deployment (`TCH-04`, `TCH-08`, `TCH-09`)**
   - Add `engines.node` to `package.json` and update `.github/workflows/ci-cd.yml` to use `node-version-file: 'package.json'` (`TCH-08`).
-  - Configure Vite & `vite-plugin-pwa` base path (`/ctrl-plus-plus/` in production) and add GitHub Pages deployment job (`actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages` on push to `main`) in `.github/workflows/ci-cd.yml` (`TCH-04`, `TCH-09`).
+  - Configure Vite & `vite-plugin-pwa` base path (`/ctrl-plus-plus/` in dev & production) and add GitHub Pages deployment job (`actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages` on push to `main`) in `.github/workflows/ci-cd.yml` (`TCH-04`, `TCH-09`).
   - Verify: `npm run lint && npm test && npm run build` (`tests/tech-config.test.ts`)
 
-- [ ] **Task 3: LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter` (`CTL-01`, `CTL-02`)**
+- [ ] **Task 3: LEGO Wireless Protocol Codec, `WebBleHubAdapter` & `MockHubAdapter` (`CTL-01`, `CTL-02`, `CTL-09`)**
   - Create `src/lego-protocol.ts`: pure functions to encode/decode LEGO Wireless Protocol v3 GATT bytes (Attached I/O `0x04`, Port Input Format Setup `0x41`, Port Value `0x45` for encoders & Hub Temp Port `0x3D`, all Hub Properties `0x01` `0x01..0x0D`, StartSpeed `0x07`, GoToAbsolutePosition `0x0D`, SetHubLed `0x51`).
   - Create `src/hub-adapter.ts`: `WebBleHubAdapter` using `navigator.bluetooth.requestDevice()` (UUID `00001623-1212-efde-1623-785feabcd123`), logging all discovered Hub properties/ports, and `MockHubAdapter` for unit tests.
   - Verify: `npm test` (`tests/lego-protocol-adapter.test.ts`)
 
 - [ ] **Task 4: Official Vehicle Profiles & Per-Hub Storage (`PRF-01`, `PRF-02`, `STR-01`..`STR-04`)**
-  - Create `src/profile.ts` & `src/storage.ts`: static catalog of official LEGO sets (`42124 Off-Road Buggy` default with `71.6mm` wheels, Port A CCW drive, Port B steer) and `localStorage` CRUD keyed by `hubId` (`getOrCreateHubProfile()`, `saveHubCalibration()`, `updateHubParameters()`, `listRememberedHubs()`, `resetHubCalibration()`, `forgetHub()`).
+  - Create `src/profile.ts` & `src/storage.ts`: static catalog of official LEGO sets (`42124 Off-Road Buggy` default with `71.6mm` wheels, Port A CCW drive, Port B steer), add `ledColor` (LWP colors `1..10` tuple per `TCH-06`) to `HubProfile` in `src/contracts.ts`, and `localStorage` CRUD keyed by `hubId` (`getOrCreateHubProfile()`, `saveHubCalibration()`, `updateHubParameters()`, `listRememberedHubs()`, `resetHubCalibration()`, `forgetHub()`).
   - Verify: `npm test` (`tests/profile-storage.test.ts`)
 
 - [ ] **Task 5: Steering/Speed Calibration & Runtime Control (`CAL-01`..`CAL-03`, `CTL-03`..`CTL-06`)**
-  - Create `src/vehicle-driver.ts`: enforces `CALIBRATING` teleop lock (`CTL-03`), implements `calibrateSteering()` (`|deg/s| < 5` for `250ms`), 2-step `startSpeedCalRun()` + `saveSpeedCal(measuredMeters)`, `setSteering(norm)`, `setSpeed(targetMps)`, and `brake(intensity?)` (`20 Hz` smooth deceleration ramp + low-speed hold `< 0.05 m/s`).
+  - Create `src/vehicle-driver.ts`: enforces `CALIBRATING` teleop lock (`CTL-03`), implements `calibrateSteering()` (stall detection per `CAL-01`), 2-step `startSpeedCalRun()` + `saveSpeedCal(measuredMeters)`, `setSteering(norm)`, `setSpeed(targetMps)`, and `brake(intensity?)` (smooth deceleration ramp + low-speed hold-brake per `CTL-06`).
   - Verify: `npm test` (`tests/control-calibration.test.ts`)
 
 - [ ] **Task 6: Vehicle Watchdog & Mobile Lifecycle Guards (`CTL-07`, `CTL-08`, `UI-02`, `UI-03`)**
-  - Add `200ms` telemetry/disconnect watchdog (`EMERGENCY_STOP` → power `0`), `emergencyStop()` / `resetEmergencyStop()`, Screen Wake Lock manager (`navigator.wakeLock.request('screen')`), and synchronous `emergencyStop() + disconnect()` on `visibilityState === 'hidden'` / `pagehide`.
+  - Add telemetry/disconnect watchdog (`CTL-07`) (`EMERGENCY_STOP` → power `0`), `emergencyStop()` / `resetEmergencyStop()`, Screen Wake Lock manager (`navigator.wakeLock.request('screen')`), and synchronous `emergencyStop() + disconnect()` on `visibilityState === 'hidden'` / `pagehide`.
   - Verify: `npm test` (`tests/safety.test.ts`)
 
-- [ ] **Task 7: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`UI-01`, `UI-04`..`UI-06`)**
+- [ ] **Task 7: Multi-View React SPA Shell (`Connect`, `Calibrate`, `Debug`) (`UI-01`, `UI-04`..`UI-07`)**
   - Build React SPA (`Ctrl++`) with shared `VehicleDriver` context, persistent top status + Battery `%` + Temp `°C` + **E-STOP / Resume** bar, and bottom tabs:
-    - `Connect`: WebBLE connect, inline Hub rename, loaded `HubProfile` summary card with **"Tweak / Calibrate"** button (navigates to `Calibrate` tab), and Remembered Hubs list.
+    - `Connect`: Web Bluetooth compatibility warning banner when unsupported (`UI-07`), WebBLE connect, inline Hub nickname edit + LED color picker (`localStorage`), loaded `HubProfile` summary card with **"Tweak / Calibrate"** button (navigates to `Calibrate` tab), and Remembered Hubs list.
     - `Calibrate`: Official LEGO Set profile selector (`42124 Off-Road Buggy`), Auto-Calibrate Steering, 2-Step 1m Speed Calibration, and manual parameter inputs (`tireDiameterMm`, `steeringClampRatio`, `defaultBrakeIntensity`).
     - `Debug`: Speed presets, steering slider, progressive brake button, live encoder telemetry, and LEGO Wireless Protocol property/port inspector.
   - Verify: `npm test && npm run build`.
