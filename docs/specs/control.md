@@ -50,7 +50,7 @@ This table is the only place these values are stated. Code exports each one unde
 - **CTL-08:** `WHEN emergencyStop() is called from any state, THE VehicleDriver SHALL immediately command brake/coast (power = 0) on all drive/steer ports and enter EMERGENCY_STOP; WHEN resetEmergencyStop() is called while BLE is connected, IT SHALL return to READY.`
 
 ### Non-Invasive Hardware Principle
-- **CTL-09:** `THE System SHALL preserve stock physical Hub configuration and firmware as-is, limiting writes to volatile per-session commands that reset on Hub power-off (motor output, LED color, port input subscriptions) and never issuing persistent writes (Hub Property Set e.g. Advertising Name 0x01, flash, or firmware changes).`
+- **CTL-09:** `THE System SHALL preserve stock physical Hub configuration and firmware as-is, limiting writes to volatile per-session commands that reset on Hub power-off (motor output, LED color, port input subscriptions, Hub Property Request Update / Enable Updates) and never issuing persistent writes (Hub Property Set e.g. Advertising Name 0x01, flash, or firmware changes).`
 
 ---
 
