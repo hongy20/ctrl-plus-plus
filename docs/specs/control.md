@@ -28,6 +28,7 @@ This table is the only place these values are stated. Code exports each one unde
 | `BRAKE_TICK_HZ` | `20` | `CTL-06` |
 | `HOLD_BRAKE_SPEED_MPS` | `0.05` | `CTL-06` |
 | `WATCHDOG_TIMEOUT_MS` | `200` | `CTL-07` |
+| `LOW_BATTERY_CUTOFF_PCT` | `10` | `CTL-10` |
 
 ---
 
@@ -48,6 +49,7 @@ This table is the only place these values are stated. Code exports each one unde
 ### Hardware Fail-Safe & Watchdog
 - **CTL-07:** `WHEN BLE disconnects (gattserverdisconnected) or telemetry lags > WATCHDOG_TIMEOUT_MS while driving or calibrating, THE VehicleDriver SHALL immediately transition to EMERGENCY_STOP and cut motor power to 0.`
 - **CTL-08:** `WHEN emergencyStop() is called from any state, THE VehicleDriver SHALL immediately command brake/coast (power = 0) on all drive/steer ports and enter EMERGENCY_STOP; WHEN resetEmergencyStop() is called while BLE is connected, IT SHALL return to READY.`
+- **CTL-10:** `WHEN reported Hub Battery Level drops below LOW_BATTERY_CUTOFF_PCT while connected, THE VehicleDriver SHALL immediately stop the car / cancel any ongoing driving or calibration action, cut motor power to 0, and reject new driving or calibration commands.`
 
 ### Non-Invasive Hardware Principle
 - **CTL-09:** `THE System SHALL preserve stock physical Hub configuration and firmware as-is, limiting writes to volatile per-session commands that reset on Hub power-off (motor output, LED color, port input subscriptions, Hub Property Request Update / Enable Updates) and never issuing persistent writes (Hub Property Set e.g. Advertising Name 0x01, flash, or firmware changes).`

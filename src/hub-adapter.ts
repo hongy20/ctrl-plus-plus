@@ -48,6 +48,7 @@ export class WebBleHubAdapter implements HubAdapter {
   private hubName: string | null = null;
   private messageListeners = new Set<(packet: Uint8Array) => void>();
   private disconnectListeners = new Set<() => void>();
+  private writeChain: Promise<void> = Promise.resolve();
 
   async connect(): Promise<void> {
     if (this.connected || this.connecting) {
@@ -190,16 +191,20 @@ export class WebBleHubAdapter implements HubAdapter {
     return this.hubName;
   }
 
-  async send(packet: Uint8Array): Promise<void> {
-    if (!this.characteristic) {
-      throw new Error('Cannot send packet: Not connected');
-    }
+  send(packet: Uint8Array): Promise<void> {
+    const run = this.writeChain.then(async () => {
+      if (!this.connected || !this.characteristic) {
+        throw new Error('Cannot send packet: Not connected');
+      }
 
-    if (typeof this.characteristic.writeValueWithResponse === 'function') {
-      await this.characteristic.writeValueWithResponse(packet);
-    } else if (typeof this.characteristic.writeValue === 'function') {
-      await this.characteristic.writeValue(packet);
-    }
+      if (typeof this.characteristic.writeValueWithResponse === 'function') {
+        await this.characteristic.writeValueWithResponse(packet);
+      } else if (typeof this.characteristic.writeValue === 'function') {
+        await this.characteristic.writeValue(packet);
+      }
+    });
+    this.writeChain = run.catch(() => {});
+    return run;
   }
 
   onMessage(callback: (packet: Uint8Array) => void): () => void {
@@ -248,77 +253,3 @@ export class WebBleHubAdapter implements HubAdapter {
   };
 }
 
-export interface MockHubAdapterOptions {
-  hubId?: string;
-  hubName?: string;
-}
-
-export class MockHubAdapter implements HubAdapter {
-  public sentPackets: Uint8Array[] = [];
-  private connected = false;
-  private connecting = false;
-  private hubId: string | null;
-  private hubName: string | null;
-  private messageListeners = new Set<(packet: Uint8Array) => void>();
-  private disconnectListeners = new Set<() => void>();
-
-  constructor(options: MockHubAdapterOptions = {}) {
-    this.hubId = options.hubId ?? 'mock-hub';
-    this.hubName = options.hubName ?? 'Mock Hub';
-  }
-
-  async connect(): Promise<void> {
-    if (this.connected || this.connecting) {
-      throw new Error('Already connected or connecting');
-    }
-    this.connected = true;
-  }
-
-  async disconnect(): Promise<void> {
-    this.connected = false;
-    this.connecting = false;
-  }
-
-  isConnected(): boolean {
-    return this.connected;
-  }
-
-  getHubId(): string | null {
-    return this.hubId;
-  }
-
-  getHubName(): string | null {
-    return this.hubName;
-  }
-
-  async send(packet: Uint8Array): Promise<void> {
-    this.sentPackets.push(packet);
-  }
-
-  onMessage(callback: (packet: Uint8Array) => void): () => void {
-    this.messageListeners.add(callback);
-    return () => {
-      this.messageListeners.delete(callback);
-    };
-  }
-
-  onDisconnect(callback: () => void): () => void {
-    this.disconnectListeners.add(callback);
-    return () => {
-      this.disconnectListeners.delete(callback);
-    };
-  }
-
-  emitMessage(packet: Uint8Array): void {
-    for (const cb of this.messageListeners) {
-      cb(packet);
-    }
-  }
-
-  simulateDisconnect(): void {
-    this.connected = false;
-    for (const cb of this.disconnectListeners) {
-      cb();
-    }
-  }
-}

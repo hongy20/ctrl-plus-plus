@@ -33,6 +33,7 @@
 - **UI-05:** `WHILE on the Calibrate tab, THE UI SHALL provide controls to (a) select the Official Vehicle Profile preset (PRF-01, default: "42124 Off-Road Buggy"), (b) run Auto-Calibrate Steering Limits (CAL-01) and 2-Step 1m Speed Calibration (CAL-03), and (c) manually tweak per-hub parameters (STR-03: Wheel Diameter mm, Steering Clamp %, Default Brake Intensity).`
 - **UI-06:** `WHILE on the Debug tab, THE UI SHALL provide touch controls for Forward/Reverse speed presets, Steer Left/Center/Right slider, Progressive Brake button, live drive/steer encoder telemetry, and a live inspector log of all LEGO Wireless Protocol Hub Properties and Attached I/O ports.`
 - **UI-07:** `WHEN the browser environment lacks Web Bluetooth support (navigator.bluetooth is undefined or unavailable), THE UI SHALL display a prominent compatibility warning banner on the Connect view advising the user to open the app in Google Chrome (Android or Desktop) over HTTPS and disable the Connect button.`
+- **UI-08:** `WHILE Hub Battery Level is below LOW_BATTERY_CUTOFF_PCT, THE UI SHALL display a prominent low-battery cutoff message and disable driving and calibration controls.`
 
 ### M2 Views (`Drive` Cockpit — Planned for Milestone 2)
 - *To be specified in Milestone 2: Device-orientation (tilt) steering/throttle HUD and dual-thumb touch pedals.*

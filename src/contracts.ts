@@ -9,6 +9,9 @@ export const DRIVER_STATES = [
 
 export type DriverState = (typeof DRIVER_STATES)[number];
 
+export const HUB_LED_COLORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export type HubLedColor = (typeof HUB_LED_COLORS)[number];
+
 export interface VehicleProfile {
   setId: string;
   displayName: string;
@@ -32,6 +35,7 @@ export interface HubProfile {
   hubId: string;
   name: string;
   setId: string;
+  ledColor: HubLedColor;
   lastConnectedAt: number;
   tireDiameterMm: number;
   steeringClampRatio: number;

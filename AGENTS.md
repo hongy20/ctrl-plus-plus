@@ -40,3 +40,4 @@ Every ⏸ below is a stop point: wait for an explicit green light (e.g., *"yes"*
 - **State Each Value Once:** Thresholds and tuning values live only in their domain spec's *Tuning Constants* table; plans and other specs reference the constant name or requirement ID.
 - **Code Owns Schemas:** Once code exists, TypeScript types (`interface`/`type`) and `vitest` tests own exact data shapes—link to them instead of copying code into Markdown.
 - **Latest Production Versions Only:** Never hand-write versions from training memory into `package.json`. Initialize via `npm init -y` and install with `npm i <pkg>` / `npm i -D <pkg>` so npm resolves the latest production versions.
+- **Modular Source Files (≤ 300 lines):** Keep UI views, hooks, and domain helpers in focused modules (e.g., one React component per tab under `src/components/`, and dedicated helper modules for large subsystems) instead of monolithic ~600+ line files.

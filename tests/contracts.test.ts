@@ -45,6 +45,7 @@ describe('Contracts', () => {
       hubId: 'hub-test-123',
       name: 'Buggy Hub',
       setId: '42124',
+      ledColor: 5,
       lastConnectedAt: 1731000000000,
       tireDiameterMm: 71.6,
       steeringClampRatio: 0.9,
@@ -58,6 +59,7 @@ describe('Contracts', () => {
     };
 
     expect(sampleHub.hubId).toBe('hub-test-123');
+    expect(sampleHub.ledColor).toBe(5);
     expect(sampleHub.calibration.kCal).toBe(1.0);
     expect(sampleHub.calibration.leftLimit).toBeNull();
   });
