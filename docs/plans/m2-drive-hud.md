@@ -11,7 +11,7 @@
   - Extend `CTL-06` (`brake(intensity?, targetSpeedMps = 0)`) to smoothly ramp `currentSpeedMps` toward any `targetSpeedMps` along `a = intensity * aMax` at `BRAKE_TICK_HZ`, staying in `DRIVING` when `targetSpeedMps !== 0` and engaging `StartPower(127)` hold-brake (`READY`) only when `targetSpeedMps === 0` and `|speed| < HOLD_BRAKE_SPEED_MPS`.
   - Export M2 UI tuning constants (`BRAKE_TAP_MAX_MS`, `BRAKE_TAP_STEP_RATIO`, `TILT_DEADZONE_DEG`, `TILT_MAX_DEG`) and pure helper functions for live `m/s` speed telemetry calculation and tilt angle normalization (`[-1.0, +1.0]` with baseline + deadzone).
 
-- [ ] **Task 2 — `Drive` Cockpit HUD Component & SPA Navigation (`src/components/DriveTab.tsx`, `src/App.tsx`)**
+- [x] **Task 2 — `Drive` Cockpit HUD Component & SPA Navigation (`src/components/DriveTab.tsx`, `src/App.tsx`)**
   - Add `Drive` tab to bottom navigation (`UI-01`) and implement `DriveTab.tsx` (`≤ 300` lines):
     - Live cockpit gauges (`UI-09`): Speed (`m/s`), Target Throttle (`%`), and Steering (`%` + encoder `°`).
     - Touch mode (`UI-10`, `UI-11`): Spring-return horizontal steering slider/wheel (`-100%..+100%` → `0` on release) and vertical throttle slider with **Cruise / Speed Hold** toggle (dead-man release when OFF; latched target speed when ON).

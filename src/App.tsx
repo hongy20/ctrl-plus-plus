@@ -6,18 +6,20 @@ import { LOW_BATTERY_CUTOFF_PCT, VehicleDriver } from './vehicle-driver';
 import { CalibrateTab } from './components/CalibrateTab';
 import { ConnectTab } from './components/ConnectTab';
 import { DebugTab } from './components/DebugTab';
+import { DriveTab } from './components/DriveTab';
 import { TopBar } from './components/TopBar';
 
 export interface AppProps {
   adapter?: HubAdapter;
+  driver?: VehicleDriver;
 }
 
-type TabKey = 'connect' | 'calibrate' | 'debug';
+type TabKey = 'connect' | 'calibrate' | 'drive' | 'debug';
 
 export function App(props: AppProps): React.JSX.Element {
-  const { adapter: propAdapter } = props;
+  const { adapter: propAdapter, driver: propDriver } = props;
   const adapter = useMemo(() => propAdapter ?? new WebBleHubAdapter(), [propAdapter]);
-  const driver = useMemo(() => new VehicleDriver(adapter), [adapter]);
+  const driver = useMemo(() => propDriver ?? new VehicleDriver(adapter), [propDriver, adapter]);
 
   const [, setTick] = useState(0);
   const [activeTab, setActiveTab] = useState<TabKey>('connect');
@@ -34,9 +36,9 @@ export function App(props: AppProps): React.JSX.Element {
   useEffect(() => {
     driver.attach();
     return () => {
-      driver.destroy();
+      if (!propDriver) driver.destroy();
     };
-  }, [driver]);
+  }, [driver, propDriver]);
 
   // Subscribe to driver updates
   useEffect(() => {
@@ -115,6 +117,14 @@ export function App(props: AppProps): React.JSX.Element {
             onUpdate={handleUpdate}
           />
         )}
+        {activeTab === 'drive' && (
+          <DriveTab
+            driver={driver}
+            profile={profile}
+            driverState={driverState}
+            isLowBattery={isLowBattery}
+          />
+        )}
         {activeTab === 'debug' && (
           <DebugTab driver={driver} isLowBattery={isLowBattery} />
         )}
@@ -141,6 +151,17 @@ export function App(props: AppProps): React.JSX.Element {
           }`}
         >
           Calibrate
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('drive')}
+          className={`flex-1 py-3 text-center text-sm font-semibold ${
+            activeTab === 'drive'
+              ? 'text-blue-600 border-t-2 border-blue-600'
+              : 'text-gray-600'
+          }`}
+        >
+          Drive
         </button>
         <button
           type="button"

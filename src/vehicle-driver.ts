@@ -9,8 +9,8 @@ import { getVehicleProfile } from './profile';
 import { listRememberedHubs } from './storage';
 
 export {
-  BRAKE_TICK_HZ, HOLD_BRAKE_SPEED_MPS, LOW_BATTERY_CUTOFF_PCT,
-  STALL_HOLD_MS, STALL_SPEED_DEG_S, TELEMETRY_MIN_HZ, WATCHDOG_TIMEOUT_MS,
+  BRAKE_TAP_MAX_MS, BRAKE_TAP_STEP_RATIO, BRAKE_TICK_HZ, HOLD_BRAKE_SPEED_MPS, LOW_BATTERY_CUTOFF_PCT,
+  STALL_HOLD_MS, STALL_SPEED_DEG_S, TELEMETRY_MIN_HZ, TILT_DEADZONE_DEG, TILT_MAX_DEG, WATCHDOG_TIMEOUT_MS,
 } from './driver/constants';
 
 export class VehicleDriver {
@@ -90,9 +90,7 @@ export class VehicleDriver {
       this.hubProfile = profile;
       this.transitionState('READY');
     } catch (error) {
-      if (this.opGeneration === gen && this.state === 'CONNECTING') {
-        this.transitionState('DISCONNECTED');
-      }
+      if (this.opGeneration === gen && this.state === 'CONNECTING') this.transitionState('DISCONNECTED');
       throw error;
     }
   }
@@ -177,8 +175,9 @@ export class VehicleDriver {
 
   async setSpeed(targetMps: number): Promise<void> {
     assertOperational('setSpeed', this.state, this.isLowBatteryCutoff());
+    this.aborts.abortAll();
     const profile = this.requireProfile();
-    const gen = this.opGeneration;
+    const gen = ++this.opGeneration;
     await executeDrive(this.adapter, profile, targetMps);
     if (this.opGeneration !== gen || (this.state !== 'READY' && this.state !== 'DRIVING')) {
       throw new Error('Speed command aborted');
@@ -188,20 +187,20 @@ export class VehicleDriver {
     this.armSafety(getVehicleProfile(profile.setId).drivePort);
   }
 
-  async brake(intensity?: number): Promise<void> {
+  async brake(intensity?: number, targetSpeedMps = 0): Promise<void> {
     assertOperational('brake', this.state, this.isLowBatteryCutoff());
-    const gen = this.opGeneration;
+    this.aborts.abortAll();
+    const gen = ++this.opGeneration;
     try {
       await runBrakeRoutine({
         adapter: this.adapter,
         profile: this.requireProfile(),
         currentSpeedMps: this.currentSpeedMps,
         intensity,
+        targetSpeedMps,
         isDriving: () => this.opGeneration === gen && this.state === 'DRIVING',
         isCancelled: () => this.opGeneration !== gen,
-        onSpeedStep: (speed) => {
-          this.currentSpeedMps = speed;
-        },
+        onSpeedStep: (speed) => { this.currentSpeedMps = speed; },
         onHoldBrake: async () => {
           if (this.opGeneration !== gen) return;
           this.clearSafety();
