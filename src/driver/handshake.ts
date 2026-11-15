@@ -18,7 +18,8 @@ export async function sendHubInitHandshake(
   await adapter.send(encodeSetHubLed(hubProfile.ledColor, 0x32));
 
   const vehicle = getVehicleProfile(hubProfile.setId);
-  for (const port of [vehicle.drivePort, vehicle.steerPort, 0x3d]) {
-    await adapter.send(encodePortInputFormatSetup(port, 0x00, 1, true));
+  for (const port of [vehicle.drivePort, vehicle.steerPort]) {
+    await adapter.send(encodePortInputFormatSetup(port, 0x02, 1, true));
   }
+  await adapter.send(encodePortInputFormatSetup(0x3d, 0x00, 1, true));
 }

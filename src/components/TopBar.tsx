@@ -1,3 +1,10 @@
+import {
+  BatteryFull,
+  BatteryLow,
+  BatteryMedium,
+  BatteryWarning,
+  Thermometer,
+} from 'lucide-react';
 import type { DriverState, HubLedColor } from '../contracts';
 
 export const LED_COLOR_MAP: Record<number, string> = {
@@ -32,6 +39,17 @@ export function TopBar({
   onResume,
   onEmergencyStop,
 }: TopBarProps): React.JSX.Element {
+  const BatteryIcon =
+    batteryLevel === null
+      ? BatteryFull
+      : batteryLevel < 20
+        ? BatteryWarning
+        : batteryLevel < 40
+          ? BatteryLow
+          : batteryLevel < 75
+            ? BatteryMedium
+            : BatteryFull;
+
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-2 bg-slate-900 text-white shadow-md">
       <div className="flex items-center space-x-3">
@@ -49,13 +67,25 @@ export function TopBar({
       <div className="flex items-center space-x-3 text-sm">
         {batteryLevel !== null && (
           <span
+            title="Hub Battery Level"
             data-battery-warning={batteryLevel < 20 ? 'true' : 'false'}
-            className={batteryLevel < 20 ? 'text-red-400 font-bold' : 'text-slate-200'}
+            className={`inline-flex items-center gap-1 ${
+              batteryLevel < 20 ? 'text-red-400 font-bold' : 'text-slate-200'
+            }`}
           >
+            <BatteryIcon aria-hidden="true" className="w-4 h-4 shrink-0" />
             {batteryLevel}%
           </span>
         )}
-        {tempDegC !== null && <span className="text-slate-200">{tempDegC}°C</span>}
+        {tempDegC !== null && (
+          <span
+            title="Hub Internal Temperature"
+            className="inline-flex items-center gap-1 text-slate-200"
+          >
+            <Thermometer aria-hidden="true" className="w-4 h-4 shrink-0" />
+            {tempDegC}°C
+          </span>
+        )}
         {driverState === 'EMERGENCY_STOP' ? (
           <button
             type="button"

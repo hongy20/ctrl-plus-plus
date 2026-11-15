@@ -168,6 +168,7 @@ export async function runSteeringCalibrationRoutine(
 export interface SpeedCalRunOptions {
   adapter: HubAdapter;
   drivePort: number;
+  drivePolarity?: 1 | -1;
   targetDeg?: number;
   initialAngle: number | null;
   addPortValueListener: (cb: PortValueListener) => () => void;
@@ -178,6 +179,7 @@ export function runSpeedCalRun(options: SpeedCalRunOptions): Promise<void> {
   const {
     adapter,
     drivePort,
+    drivePolarity = 1,
     targetDeg = SPEED_CAL_TARGET_DEG,
     initialAngle,
     addPortValueListener,
@@ -229,7 +231,7 @@ export function runSpeedCalRun(options: SpeedCalRunOptions): Promise<void> {
     };
 
     removeListener = addPortValueListener(onPortValue);
-    adapter.send(encodeStartSpeed(drivePort, 40)).catch(finishReject);
+    adapter.send(encodeStartSpeed(drivePort, 40 * drivePolarity)).catch(finishReject);
   });
 }
 

@@ -147,10 +147,14 @@ describe('VehicleDriver Control & Calibration (CTL-02..CTL-06, CAL-01..CAL-03)',
     expect(ledPacket).toBeDefined();
     expect(ledPacket![7]).toBe(profile.ledColor);
 
-    // Port Input Format Setup (0x41) subscriptions for drive (0x00), steer (0x01), Hub Temp (0x3D)
+    // Port Input Format Setup (0x41) subscriptions for drive (0x00, mode 0x02 POS), steer (0x01, mode 0x02 POS), Hub Temp (0x3D, mode 0x00)
     const subPackets = adapter.sentPackets.filter((p) => p.length >= 10 && p[2] === 0x41);
-    for (const port of [0x00, 0x01, 0x3d]) {
-      const sub = subPackets.find((p) => p[3] === port && p[9] === 0x01);
+    for (const [port, expectedMode] of [
+      [0x00, 0x02],
+      [0x01, 0x02],
+      [0x3d, 0x00],
+    ] as const) {
+      const sub = subPackets.find((p) => p[3] === port && p[4] === expectedMode && p[9] === 0x01);
       expect(sub).toBeDefined();
     }
 
@@ -278,7 +282,7 @@ describe('VehicleDriver Control & Calibration (CTL-02..CTL-06, CAL-01..CAL-03)',
     expect(driver.getState()).toBe('CALIBRATING');
 
     const driveStartCmds = getStartSpeedPackets(adapter.sentPackets, 0x00);
-    expect(driveStartCmds.some((c) => c.speed !== 0)).toBe(true);
+    expect(driveStartCmds.some((c) => c.speed === -40)).toBe(true);
 
     // Feed drive encoder (port 0x00) progress until fixed target is reached
     for (let deg = 0; deg <= 3600; deg += 200) {
@@ -376,15 +380,19 @@ describe('VehicleDriver Control & Calibration (CTL-02..CTL-06, CAL-01..CAL-03)',
     await brakePromise;
 
     const cmds = getStartSpeedPackets(adapter.sentPackets, 0x00);
-    expect(cmds.length).toBeGreaterThanOrEqual(2);
+    expect(cmds.length).toBeGreaterThanOrEqual(1);
 
-    // Hold-brake (127) must be engaged at the end, and NOT before deceleration completes
-    const holdIdx = cmds.findIndex((c) => c.speed === 127);
-    expect(holdIdx).toBeGreaterThan(0);
-    expect(holdIdx).toBe(cmds.length - 1);
+    // Hold-brake (StartPower 0x51, mode 0x00, power 127) must be engaged at the end
+    const driveMotorPackets = adapter.sentPackets.filter(
+      (p) => p[2] === 0x81 && p[3] === 0x00,
+    );
+    const lastMotorPkt = driveMotorPackets[driveMotorPackets.length - 1]!;
+    expect(lastMotorPkt[5]).toBe(0x51);
+    expect(lastMotorPkt[6]).toBe(0x00);
+    expect(lastMotorPkt[7]).toBe(127);
 
-    // Prior to hold-brake, magnitudes should ramp down monotonically
-    const rampMagnitudes = cmds.slice(0, holdIdx).map((c) => Math.abs(c.speed));
+    // Prior to hold-brake, StartSpeed magnitudes should ramp down monotonically
+    const rampMagnitudes = cmds.map((c) => Math.abs(c.speed));
     for (let i = 1; i < rampMagnitudes.length; i++) {
       expect(rampMagnitudes[i]!).toBeLessThanOrEqual(rampMagnitudes[i - 1]!);
     }

@@ -1,5 +1,5 @@
 import type { DriverState, HubAdapter, HubProfile, VehicleProfile } from '../contracts';
-import { encodeGoToAbsolutePosition, encodeStartSpeed } from '../lego-protocol';
+import { encodeGoToAbsolutePosition, encodeStartPower, encodeStartSpeed } from '../lego-protocol';
 import { getVehicleProfile } from '../profile';
 import { BRAKE_TICK_HZ, HOLD_BRAKE_SPEED_MPS, LOW_BATTERY_CUTOFF_PCT } from './constants';
 
@@ -224,7 +224,7 @@ export function runBrakeRoutine(options: BrakeRoutineOptions): Promise<void> {
         if (isCancelled?.()) return;
         await onHoldBrake();
         if (isCancelled?.()) return;
-        await adapter.send(encodeStartSpeed(vehicle.drivePort, 127));
+        await adapter.send(encodeStartPower(vehicle.drivePort, 127));
       },
       onAbortRegistered,
     },

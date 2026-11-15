@@ -41,7 +41,7 @@ This table is the only place these values are stated. Code exports each one unde
 - **CAL-02:** `WHEN both steering limits are recorded, THE System SHALL compute centerPos = (leftLimit + rightLimit) / 2, command the steering motor to centerPos, persist { leftLimit, rightLimit, centerPos } to the active HubProfile (STR-02), and return VehicleDriver to READY.`
 
 ### Empirical Ground-Speed Calibration (`kCal`)
-- **CAL-03:** `WHEN startSpeedCalRun() is invoked, THE System SHALL transition VehicleDriver to CALIBRATING, drive the drive motor for a fixed encoder revolution target, and stop; WHEN saveSpeedCal(measuredMeters) is subsequently called with the user's floor measurement, IT SHALL compute kCal = measuredMeters / theoreticalMeters (using active tireDiameterMm), persist kCal to the active HubProfile (STR-02), and return VehicleDriver to READY.`
+- **CAL-03:** `WHEN startSpeedCalRun() is invoked, THE System SHALL transition VehicleDriver to CALIBRATING, drive the drive motor forward (respecting VehicleProfile.drivePolarity) for a fixed encoder revolution target (Mode 0x02 POS), and stop; WHEN saveSpeedCal(measuredMeters) is subsequently called with the user's floor measurement, IT SHALL compute kCal = measuredMeters / theoreticalMeters (using active tireDiameterMm), persist kCal to the active HubProfile (STR-02), and return VehicleDriver to READY.`
 
 ---
 
