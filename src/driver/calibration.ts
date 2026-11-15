@@ -159,7 +159,7 @@ export async function runSteeringCalibrationRoutine(
   options: SteeringCalibrationOptions & { hubId: string },
 ): Promise<HubProfile | null> {
   const result = await executeSteeringCalibration(options);
-  if (!result) {
+  if (!result || !options.isCalibrating()) {
     return null;
   }
   return saveHubCalibration(options.hubId, result);

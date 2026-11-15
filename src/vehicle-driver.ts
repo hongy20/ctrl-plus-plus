@@ -198,6 +198,7 @@ export class VehicleDriver {
         currentSpeedMps: this.currentSpeedMps,
         intensity,
         isDriving: () => this.opGeneration === gen && this.state === 'DRIVING',
+        isCancelled: () => this.opGeneration !== gen,
         onSpeedStep: (speed) => {
           this.currentSpeedMps = speed;
         },

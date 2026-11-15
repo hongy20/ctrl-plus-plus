@@ -186,6 +186,7 @@ export interface BrakeRoutineOptions {
   currentSpeedMps: number;
   intensity?: number;
   isDriving: () => boolean;
+  isCancelled?: () => boolean;
   onTick?: () => void;
   onSpeedStep: (speedMps: number) => void;
   onHoldBrake: () => Promise<void>;
@@ -199,6 +200,7 @@ export function runBrakeRoutine(options: BrakeRoutineOptions): Promise<void> {
     currentSpeedMps,
     intensity,
     isDriving,
+    isCancelled,
     onTick,
     onSpeedStep,
     onHoldBrake,
@@ -219,7 +221,9 @@ export function runBrakeRoutine(options: BrakeRoutineOptions): Promise<void> {
       onTick,
       onSpeedStep,
       onHoldBrake: async () => {
+        if (isCancelled?.()) return;
         await onHoldBrake();
+        if (isCancelled?.()) return;
         await adapter.send(encodeStartSpeed(vehicle.drivePort, 127));
       },
       onAbortRegistered,
