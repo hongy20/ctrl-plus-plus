@@ -26,19 +26,30 @@ type DriveMode = 'touch' | 'tilt';
 
 export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTabProps): React.JSX.Element {
   const [, setTick] = useState(0);
+  const vehicle = useMemo(() => getVehicleProfile(profile?.setId), [profile?.setId]);
+  const maxSpeedMps = useMemo(() => (profile ? calculateMaxSpeedMps(profile, vehicle) : 0), [profile, vehicle]);
+
   const [mode, setMode] = useState<DriveMode>('touch');
-  const [throttlePct, setThrottlePct] = useState(0);
+  const [throttlePct, setThrottlePct] = useState(() => {
+    if (!profile) return 0;
+    const v = getVehicleProfile(profile.setId);
+    const max = calculateMaxSpeedMps(profile, v);
+    return max > 0 ? Math.round((driver.getCurrentSpeedMps() / max) * 100) : 0;
+  });
   const [steerPct, setSteerPct] = useState(0);
-  const [cruiseHold, setCruiseHold] = useState(false);
+  const [cruiseHold, setCruiseHold] = useState(() => driver.getCurrentSpeedMps() !== 0);
 
   const baselineRef = useRef<{ beta: number; gamma: number } | null>(null);
   const brakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const brakeHoldTriggeredRef = useRef(false);
 
-  useEffect(() => driver.subscribe(() => setTick((t) => t + 1)), [driver]);
-
-  const vehicle = useMemo(() => getVehicleProfile(profile?.setId), [profile?.setId]);
-  const maxSpeedMps = useMemo(() => (profile ? calculateMaxSpeedMps(profile, vehicle) : 0), [profile, vehicle]);
+  useEffect(() => {
+    return driver.subscribe(() => {
+      setTick((t) => t + 1);
+      const cur = driver.getCurrentSpeedMps();
+      setThrottlePct(maxSpeedMps > 0 ? Math.round((cur / maxSpeedMps) * 100) : 0);
+    });
+  }, [driver, maxSpeedMps]);
 
   const isEnabled = (driverState === 'READY' || driverState === 'DRIVING') && !isLowBattery && profile !== null;
   const isDisabled = !isEnabled;
@@ -72,24 +83,16 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
       }
       const throttleNorm = normalizeTiltAxis(e.beta, baselineRef.current.beta, TILT_DEADZONE_DEG, TILT_MAX_DEG);
       const steerNorm = normalizeTiltAxis(e.gamma, baselineRef.current.gamma, TILT_DEADZONE_DEG, TILT_MAX_DEG);
-      const nextThrottle = Math.round(throttleNorm * 100);
-      const nextSteer = Math.round(steerNorm * 100);
-      setThrottlePct(nextThrottle);
-      setSteerPct(nextSteer);
+      setThrottlePct(Math.round(throttleNorm * 100));
+      setSteerPct(Math.round(steerNorm * 100));
       void driver.setSpeed(throttleNorm * maxSpeedMps).catch(() => {});
       void driver.setSteering(steerNorm).catch(() => {});
     };
     window.addEventListener('deviceorientation', handleOrientation);
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation);
-    };
+    return () => window.removeEventListener('deviceorientation', handleOrientation);
   }, [mode, isDisabled, driver, maxSpeedMps]);
 
-  useEffect(() => {
-    return () => {
-      if (brakeTimerRef.current) clearTimeout(brakeTimerRef.current);
-    };
-  }, []);
+  useEffect(() => () => { if (brakeTimerRef.current) clearTimeout(brakeTimerRef.current); }, []);
 
   const handleThrottleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const pct = Number(e.target.value);
@@ -136,7 +139,7 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
       brakeHoldTriggeredRef.current = false;
       return;
     }
-    const currentTargetMps = (throttlePct / 100) * maxSpeedMps;
+    const currentTargetMps = driver.getCurrentSpeedMps() || (throttlePct / 100) * maxSpeedMps;
     const nextTargetMps = calculateBrakeTapTargetMps(currentTargetMps, maxSpeedMps, BRAKE_TAP_STEP_RATIO);
     const nextPct = maxSpeedMps > 0 ? Math.round((nextTargetMps / maxSpeedMps) * 100) : 0;
     setThrottlePct(nextPct);
@@ -167,18 +170,12 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
 
       {/* Cockpit Gauges (UI-09) */}
       <section className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 grid grid-cols-3 gap-2 text-center">
-        <div className="p-2 bg-slate-50 rounded">
-          <div className="text-xs text-gray-500 uppercase tracking-wider">Speed</div>
-          <div className="text-lg font-bold text-slate-800">{liveSpeedMps.toFixed(2)} m/s</div>
-        </div>
-        <div className="p-2 bg-slate-50 rounded">
-          <div className="text-xs text-gray-500 uppercase tracking-wider">Throttle</div>
-          <div className="text-lg font-bold text-slate-800">{throttlePct}%</div>
-        </div>
-        <div className="p-2 bg-slate-50 rounded">
-          <div className="text-xs text-gray-500 uppercase tracking-wider">Steering</div>
-          <div className="text-lg font-bold text-slate-800">{steerPct}% ({steerAngleDeg}°)</div>
-        </div>
+        {([['Speed', `${liveSpeedMps.toFixed(2)} m/s`], ['Throttle', `${throttlePct}%`], ['Steering', `${steerPct}% (${steerAngleDeg}°)`]] as const).map(([label, val]) => (
+          <div key={label} className="p-2 bg-slate-50 rounded">
+            <div className="text-xs text-gray-500 uppercase tracking-wider">{label}</div>
+            <div className="text-lg font-bold text-slate-800">{val}</div>
+          </div>
+        ))}
       </section>
 
       {/* Mode & Cruise Controls */}
@@ -220,19 +217,23 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
               <span>Throttle</span>
               <span>{throttlePct}%</span>
             </div>
-            <input
-              type="range"
-              aria-label="Throttle"
-              min="-100"
-              max="100"
-              value={throttlePct}
-              disabled={isDisabled}
-              onChange={handleThrottleChange}
-              onPointerUp={handleThrottleRelease}
-              onMouseUp={handleThrottleRelease}
-              onTouchEnd={handleThrottleRelease}
-              className="w-full h-8"
-            />
+            <div className="flex justify-center py-2">
+              <input
+                type="range"
+                aria-label="Throttle"
+                min="-100"
+                max="100"
+                value={throttlePct}
+                disabled={isDisabled}
+                onChange={handleThrottleChange}
+                onPointerUp={handleThrottleRelease}
+                onPointerCancel={handleThrottleRelease}
+                onMouseUp={handleThrottleRelease}
+                onTouchEnd={handleThrottleRelease}
+                onTouchCancel={handleThrottleRelease}
+                className="[writing-mode:vertical-lr] [direction:rtl] h-40 w-8 cursor-pointer"
+              />
+            </div>
           </div>
 
           <div>
@@ -249,8 +250,10 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
               disabled={isDisabled}
               onChange={handleSteerChange}
               onPointerUp={handleSteerRelease}
+              onPointerCancel={handleSteerRelease}
               onMouseUp={handleSteerRelease}
               onTouchEnd={handleSteerRelease}
+              onTouchCancel={handleSteerRelease}
               className="w-full h-8"
             />
           </div>
@@ -261,8 +264,7 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
               disabled={isDisabled}
               onPointerDown={handleBrakeDown}
               onPointerUp={handleBrakeUp}
-              onMouseDown={handleBrakeDown}
-              onMouseUp={handleBrakeUp}
+              onPointerCancel={handleBrakeUp}
               className="w-full py-4 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 disabled:bg-gray-300 text-white font-bold text-lg rounded-xl shadow-md select-none touch-none"
             >
               Brake

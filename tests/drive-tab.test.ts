@@ -194,9 +194,9 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
 
     await clickButton(container, /^drive$/i);
 
-    const throttleSlider = container.querySelector('input[aria-label="Throttle"]') as HTMLInputElement | null;
-    const steerSlider = container.querySelector('input[aria-label="Steering"]') as HTMLInputElement | null;
-    const brakeBtn = findButton(container, /^brake$/i);
+    let throttleSlider = container.querySelector('input[aria-label="Throttle"]') as HTMLInputElement | null;
+    let steerSlider = container.querySelector('input[aria-label="Steering"]') as HTMLInputElement | null;
+    let brakeBtn = findButton(container, /^brake$/i);
 
     expect(throttleSlider?.disabled).toBe(true);
     expect(steerSlider?.disabled).toBe(true);
@@ -204,6 +204,10 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
 
     await clickButton(container, /^connect$/i);
     await clickButton(container, /^drive$/i);
+
+    throttleSlider = container.querySelector('input[aria-label="Throttle"]') as HTMLInputElement | null;
+    steerSlider = container.querySelector('input[aria-label="Steering"]') as HTMLInputElement | null;
+    brakeBtn = findButton(container, /^brake$/i);
 
     expect(throttleSlider?.disabled).toBe(false);
     expect(steerSlider?.disabled).toBe(false);
@@ -222,6 +226,10 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
     await act(async () => {
       adapter.emitMessage(makeBatteryPacket(LOW_BATTERY_CUTOFF_PCT - 5));
     });
+
+    throttleSlider = container.querySelector('input[aria-label="Throttle"]') as HTMLInputElement | null;
+    steerSlider = container.querySelector('input[aria-label="Steering"]') as HTMLInputElement | null;
+    brakeBtn = findButton(container, /^brake$/i);
 
     expect(throttleSlider?.disabled).toBe(true);
     expect(steerSlider?.disabled).toBe(true);
@@ -291,6 +299,18 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
     await dispatchPointer(throttleSlider!, 'pointerup');
     expect(brakeSpy).not.toHaveBeenCalled();
     expect(throttleSlider!.value).toBe('50');
+
+    // UI-11 / Cruise Hold persistence across tab switch (Drive -> Connect -> Drive)
+    await setRangeValue(throttleSlider!, '80');
+    expect(throttleSlider!.value).toBe('80');
+    expect(container.textContent).toContain('80%');
+
+    await clickButton(container, /^connect$/i);
+    await clickButton(container, /^drive$/i);
+
+    const remountedThrottle = container.querySelector('input[aria-label="Throttle"]') as HTMLInputElement | null;
+    expect(remountedThrottle?.value).toBe('80');
+    expect(container.textContent).toContain('80%');
   });
 
   it('UI-12: Tilt mode captures initial device orientation (beta, gamma) as neutral baseline, maps pitch/roll outside ±TILT_DEADZONE_DEG up to ±TILT_MAX_DEG to throttle and steering, and brakes + centers steering when toggled OFF', async () => {

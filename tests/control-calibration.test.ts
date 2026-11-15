@@ -6,6 +6,7 @@ import { getOrCreateHubProfile, listRememberedHubs, saveHubCalibration, updateHu
 import {
   calculateBrakeTapTargetMps,
   calculateMaxSpeedMps,
+  calculateMotorSpeed,
   calculateTelemetrySpeedMps,
   normalizeTiltAxis,
 } from '../src/driver/control';
@@ -434,7 +435,9 @@ describe('VehicleDriver Control & Calibration (CTL-02..CTL-06, CAL-01..CAL-03)',
     for (let i = 1; i < magnitudes.length; i++) {
       expect(magnitudes[i]!).toBeLessThanOrEqual(magnitudes[i - 1]!);
     }
-    expect(magnitudes[magnitudes.length - 1]!).toBeGreaterThan(0);
+    expect(magnitudes[magnitudes.length - 1]!).toBe(
+      Math.abs(calculateMotorSpeed(1.0, driver.getHubProfile()!, getVehicleProfile('42124'))),
+    );
 
     const holdBrakePacket = adapter.sentPackets.find(
       (pkt) => pkt[2] === 0x81 && pkt[3] === 0x00 && pkt[5] === 0x51 && pkt[7] === 127,

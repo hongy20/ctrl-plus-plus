@@ -156,15 +156,23 @@ export function executeProgressiveBrake(
 
       const motorSpeed = calculateMotorSpeed(speedMps, getProfile(), vehicle);
       callbacks.onSpeedStep(speedMps);
+
+      if (targetSpeedMps !== 0 && speedMps === targetSpeedMps) {
+        cleanup();
+        adapter
+          .send(encodeStartSpeed(vehicle.drivePort, motorSpeed))
+          .then(resolve)
+          .catch((err) => {
+            cleanup();
+            reject(err);
+          });
+        return;
+      }
+
       adapter.send(encodeStartSpeed(vehicle.drivePort, motorSpeed)).catch((err) => {
         cleanup();
         reject(err);
       });
-
-      if (targetSpeedMps !== 0 && speedMps === targetSpeedMps) {
-        cleanup();
-        resolve();
-      }
     }, tickMs);
   });
 }
