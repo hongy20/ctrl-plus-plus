@@ -112,6 +112,7 @@ export class VehicleDriver {
     assertOperational('calibrateSteering', this.state, this.isLowBatteryCutoff());
     const profile = this.requireProfile();
     const vehicle = getVehicleProfile(profile.setId);
+    const gen = ++this.opGeneration;
     this.transitionState('CALIBRATING');
     this.armSafety(vehicle.steerPort);
     try {
@@ -121,15 +122,17 @@ export class VehicleDriver {
         steerPort: vehicle.steerPort,
         addPortValueListener: (cb) => this.telemetryMgr.addPortValueListener(cb),
         onAbortRegistered: (abort) => this.aborts.setStallAbort(abort),
-        isCalibrating: () => this.state === 'CALIBRATING',
+        isCalibrating: () => this.opGeneration === gen && this.state === 'CALIBRATING',
       });
-      if (result) this.hubProfile = result;
-      if (this.state === 'CALIBRATING') this.transitionState('READY');
+      if (this.opGeneration === gen) {
+        if (result) this.hubProfile = result;
+        if (this.state === 'CALIBRATING') this.transitionState('READY');
+      }
     } catch (error) {
-      if (this.state === 'CALIBRATING') this.transitionState('READY');
+      if (this.opGeneration === gen && this.state === 'CALIBRATING') this.transitionState('READY');
       throw error;
     } finally {
-      this.clearSafety();
+      if (this.opGeneration === gen) this.clearSafety();
     }
   }
 
@@ -138,6 +141,7 @@ export class VehicleDriver {
     const profile = this.requireProfile();
     this.speedCalCompleted = false;
     const drivePort = getVehicleProfile(profile.setId).drivePort;
+    const gen = ++this.opGeneration;
     this.transitionState('CALIBRATING');
     this.armSafety(drivePort);
     const angle = (this.telemetryMgr.getTelemetry(drivePort) as MotorTelemetry | undefined)?.angleDeg ?? null;
@@ -150,10 +154,9 @@ export class VehicleDriver {
         addPortValueListener: (cb) => this.telemetryMgr.addPortValueListener(cb),
         onAbortRegistered: (abort) => this.aborts.setSpeedCalAbort(abort),
       });
-      if (this.state === 'CALIBRATING') this.speedCalCompleted = true;
+      if (this.opGeneration === gen && this.state === 'CALIBRATING') this.speedCalCompleted = true;
     } catch (error) {
-      this.clearSafety();
-      if (this.state === 'CALIBRATING') this.transitionState('READY');
+      if (this.opGeneration === gen) await this.emergencyStop();
       throw error;
     }
   }
@@ -187,22 +190,29 @@ export class VehicleDriver {
 
   async brake(intensity?: number): Promise<void> {
     assertOperational('brake', this.state, this.isLowBatteryCutoff());
-    return runBrakeRoutine({
-      adapter: this.adapter,
-      profile: this.requireProfile(),
-      currentSpeedMps: this.currentSpeedMps,
-      intensity,
-      isDriving: () => this.state === 'DRIVING',
-      onSpeedStep: (speed) => {
-        this.currentSpeedMps = speed;
-      },
-      onHoldBrake: async () => {
-        this.clearSafety();
-        this.currentSpeedMps = 0;
-        this.transitionState('READY');
-      },
-      onAbortRegistered: (abort) => this.aborts.setBrakeAbort(abort),
-    });
+    const gen = this.opGeneration;
+    try {
+      await runBrakeRoutine({
+        adapter: this.adapter,
+        profile: this.requireProfile(),
+        currentSpeedMps: this.currentSpeedMps,
+        intensity,
+        isDriving: () => this.opGeneration === gen && this.state === 'DRIVING',
+        onSpeedStep: (speed) => {
+          this.currentSpeedMps = speed;
+        },
+        onHoldBrake: async () => {
+          if (this.opGeneration !== gen) return;
+          this.clearSafety();
+          this.currentSpeedMps = 0;
+          this.transitionState('READY');
+        },
+        onAbortRegistered: (abort) => this.aborts.setBrakeAbort(abort),
+      });
+    } catch (error) {
+      if (this.opGeneration === gen) await this.emergencyStop();
+      throw error;
+    }
   }
 
   async emergencyStop(): Promise<void> {
