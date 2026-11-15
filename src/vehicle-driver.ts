@@ -1,20 +1,7 @@
 import type { DriverState, HubAdapter, HubProfile, MotorTelemetry } from './contracts';
-import {
-  applySpeedCalibration,
-  runSpeedCalRun,
-  runSteeringCalibrationRoutine,
-} from './driver/calibration';
-import {
-  initializeHubConnection,
-  stopAllMotors,
-  terminateHubConnection,
-} from './driver/connection';
-import {
-  assertOperational,
-  executeDrive,
-  executeSteer,
-  runBrakeRoutine,
-} from './driver/control';
+import { applySpeedCalibration, runSpeedCalRun, runSteeringCalibrationRoutine } from './driver/calibration';
+import { initializeHubConnection, stopAllMotors, terminateHubConnection } from './driver/connection';
+import { assertOperational, executeDrive, executeSteer, runBrakeRoutine } from './driver/control';
 import { TelemetryManager } from './driver/telemetry';
 import { AbortRegistry, TelemetryPoller, WatchdogTimer } from './driver/watchdog';
 import { encodePortValueRequest } from './lego-protocol';
@@ -22,13 +9,8 @@ import { getVehicleProfile } from './profile';
 import { listRememberedHubs } from './storage';
 
 export {
-  BRAKE_TICK_HZ,
-  HOLD_BRAKE_SPEED_MPS,
-  LOW_BATTERY_CUTOFF_PCT,
-  STALL_HOLD_MS,
-  STALL_SPEED_DEG_S,
-  TELEMETRY_MIN_HZ,
-  WATCHDOG_TIMEOUT_MS,
+  BRAKE_TICK_HZ, HOLD_BRAKE_SPEED_MPS, LOW_BATTERY_CUTOFF_PCT,
+  STALL_HOLD_MS, STALL_SPEED_DEG_S, TELEMETRY_MIN_HZ, WATCHDOG_TIMEOUT_MS,
 } from './driver/constants';
 
 export class VehicleDriver {
@@ -42,6 +24,9 @@ export class VehicleDriver {
   private currentSpeedMps = 0;
   private cleanupListeners: Array<() => void> = [];
   private poller = new TelemetryPoller();
+  private opGeneration = 0;
+  private activeWatchdogPort: number | null = null;
+  private speedCalCompleted = false;
 
   constructor(adapter: HubAdapter) {
     this.adapter = adapter;
@@ -56,9 +41,7 @@ export class VehicleDriver {
     this.cleanupListeners.push(offMessage, offDisconnect);
   }
 
-  getState(): DriverState {
-    return this.state;
-  }
+  getState(): DriverState { return this.state; }
 
   getHubProfile(): HubProfile | null {
     if (!this.hubProfile) return null;
@@ -71,25 +54,11 @@ export class VehicleDriver {
     return this.hubProfile;
   }
 
-  getTelemetry(port?: number): MotorTelemetry | Map<number, MotorTelemetry> | undefined {
-    return this.telemetryMgr.getTelemetry(port);
-  }
-
-  getAttachedPorts(): Map<number, { attached: boolean; ioTypeId?: number }> {
-    return this.telemetryMgr.getAttachedPorts();
-  }
-
-  getHubProperties(): Map<number, unknown> {
-    return this.telemetryMgr.getHubProperties();
-  }
-
-  getBatteryLevel(): number | null {
-    return this.telemetryMgr.getBatteryLevel();
-  }
-
-  isLowBatteryCutoff(): boolean {
-    return this.telemetryMgr.isLowBatteryCutoff();
-  }
+  getTelemetry(port?: number): MotorTelemetry | Map<number, MotorTelemetry> | undefined { return this.telemetryMgr.getTelemetry(port); }
+  getAttachedPorts(): Map<number, { attached: boolean; ioTypeId?: number }> { return this.telemetryMgr.getAttachedPorts(); }
+  getHubProperties(): Map<number, unknown> { return this.telemetryMgr.getHubProperties(); }
+  getBatteryLevel(): number | null { return this.telemetryMgr.getBatteryLevel(); }
+  isLowBatteryCutoff(): boolean { return this.telemetryMgr.isLowBatteryCutoff(); }
 
   subscribe(listener: () => void): () => void {
     this.updateListeners.add(listener);
@@ -107,21 +76,31 @@ export class VehicleDriver {
     if (this.state !== 'DISCONNECTED' && !canReconnectFromEstop) {
       throw new Error(`Cannot connect in state ${this.state}`);
     }
+    this.telemetryMgr.resetSession();
+    this.speedCalCompleted = false;
+    this.activeWatchdogPort = null;
     this.currentSpeedMps = 0;
+    const gen = ++this.opGeneration;
     this.state = 'CONNECTING';
     try {
-      this.hubProfile = await initializeHubConnection(this.adapter);
+      const profile = await initializeHubConnection(this.adapter);
+      const currentState = this.getState();
+      if (this.opGeneration !== gen || currentState !== 'CONNECTING') {
+        if (currentState === 'EMERGENCY_STOP') await stopAllMotors(this.adapter, profile);
+        return;
+      }
+      this.hubProfile = profile;
       this.transitionState('READY');
     } catch (error) {
-      this.transitionState('DISCONNECTED');
+      if (this.opGeneration === gen && this.state === 'CONNECTING') {
+        this.transitionState('DISCONNECTED');
+      }
       throw error;
     }
   }
 
   async disconnect(): Promise<void> {
-    this.stopTelemetryPoll();
-    this.watchdog.clear();
-    this.aborts.abortAll();
+    this.resetActiveOperations();
     const profile = this.hubProfile;
     this.currentSpeedMps = 0;
     this.hubProfile = null;
@@ -134,55 +113,57 @@ export class VehicleDriver {
     const profile = this.requireProfile();
     const vehicle = getVehicleProfile(profile.setId);
     this.transitionState('CALIBRATING');
-    this.watchdog.arm();
-    this.startTelemetryPoll(vehicle.steerPort);
+    this.armSafety(vehicle.steerPort);
     try {
       const result = await runSteeringCalibrationRoutine({
         adapter: this.adapter,
         hubId: profile.hubId,
         steerPort: vehicle.steerPort,
         addPortValueListener: (cb) => this.telemetryMgr.addPortValueListener(cb),
-        onTick: () => this.resetWatchdog(),
         onAbortRegistered: (abort) => this.aborts.setStallAbort(abort),
         isCalibrating: () => this.state === 'CALIBRATING',
       });
       if (result) this.hubProfile = result;
-      if (this.state === 'CALIBRATING') {
-        this.transitionState('READY');
-      }
+      if (this.state === 'CALIBRATING') this.transitionState('READY');
     } catch (error) {
       if (this.state === 'CALIBRATING') this.transitionState('READY');
       throw error;
     } finally {
-      this.stopTelemetryPoll();
-      this.watchdog.clear();
+      this.clearSafety();
     }
   }
 
   async startSpeedCalRun(): Promise<void> {
     assertOperational('startSpeedCalRun', this.state, this.isLowBatteryCutoff());
     const profile = this.requireProfile();
+    this.speedCalCompleted = false;
+    const drivePort = getVehicleProfile(profile.setId).drivePort;
     this.transitionState('CALIBRATING');
-    this.watchdog.arm();
-    const vehicle = getVehicleProfile(profile.setId);
-    const drivePort = vehicle.drivePort;
-    this.startTelemetryPoll(drivePort);
+    this.armSafety(drivePort);
     const angle = (this.telemetryMgr.getTelemetry(drivePort) as MotorTelemetry | undefined)?.angleDeg ?? null;
 
-    return runSpeedCalRun({
-      adapter: this.adapter,
-      drivePort,
-      initialAngle: angle,
-      addPortValueListener: (cb) => this.telemetryMgr.addPortValueListener(cb),
-      onAbortRegistered: (abort) => this.aborts.setSpeedCalAbort(abort),
-    });
+    try {
+      await runSpeedCalRun({
+        adapter: this.adapter,
+        drivePort,
+        initialAngle: angle,
+        addPortValueListener: (cb) => this.telemetryMgr.addPortValueListener(cb),
+        onAbortRegistered: (abort) => this.aborts.setSpeedCalAbort(abort),
+      });
+      if (this.state === 'CALIBRATING') this.speedCalCompleted = true;
+    } catch (error) {
+      this.clearSafety();
+      if (this.state === 'CALIBRATING') this.transitionState('READY');
+      throw error;
+    }
   }
 
   async saveSpeedCal(measuredMeters: number): Promise<void> {
     if (this.state !== 'CALIBRATING') throw new Error(`Cannot saveSpeedCal in state ${this.state}`);
+    if (!this.speedCalCompleted) throw new Error('Speed calibration run has not completed');
     this.hubProfile = applySpeedCalibration(this.requireProfile(), measuredMeters);
-    this.stopTelemetryPoll();
-    this.watchdog.clear();
+    this.speedCalCompleted = false;
+    this.clearSafety();
     this.transitionState('READY');
   }
 
@@ -194,11 +175,14 @@ export class VehicleDriver {
   async setSpeed(targetMps: number): Promise<void> {
     assertOperational('setSpeed', this.state, this.isLowBatteryCutoff());
     const profile = this.requireProfile();
+    const gen = this.opGeneration;
     await executeDrive(this.adapter, profile, targetMps);
+    if (this.opGeneration !== gen || (this.state !== 'READY' && this.state !== 'DRIVING')) {
+      throw new Error('Speed command aborted');
+    }
     this.currentSpeedMps = targetMps;
     this.transitionState('DRIVING');
-    this.watchdog.arm();
-    this.startTelemetryPoll(getVehicleProfile(profile.setId).drivePort);
+    this.armSafety(getVehicleProfile(profile.setId).drivePort);
   }
 
   async brake(intensity?: number): Promise<void> {
@@ -209,13 +193,11 @@ export class VehicleDriver {
       currentSpeedMps: this.currentSpeedMps,
       intensity,
       isDriving: () => this.state === 'DRIVING',
-      onTick: () => this.resetWatchdog(),
       onSpeedStep: (speed) => {
         this.currentSpeedMps = speed;
       },
       onHoldBrake: async () => {
-        this.stopTelemetryPoll();
-        this.watchdog.clear();
+        this.clearSafety();
         this.currentSpeedMps = 0;
         this.transitionState('READY');
       },
@@ -224,9 +206,7 @@ export class VehicleDriver {
   }
 
   async emergencyStop(): Promise<void> {
-    this.stopTelemetryPoll();
-    this.watchdog.clear();
-    this.aborts.abortAll();
+    this.resetActiveOperations();
     this.currentSpeedMps = 0;
     this.transitionState('EMERGENCY_STOP');
     await stopAllMotors(this.adapter, this.hubProfile);
@@ -239,16 +219,16 @@ export class VehicleDriver {
   }
 
   destroy(): void {
-    this.stopTelemetryPoll();
-    this.watchdog.clear();
-    this.aborts.abortAll();
+    this.resetActiveOperations();
     for (const off of this.cleanupListeners) off();
     this.cleanupListeners = [];
     this.telemetryMgr.clear();
     this.updateListeners.clear();
   }
 
-  private startTelemetryPoll(port: number): void {
+  private armSafety(port: number): void {
+    this.activeWatchdogPort = port;
+    this.watchdog.arm();
     this.poller.start(() => {
       if ((this.state === 'DRIVING' || this.state === 'CALIBRATING') && this.adapter.isConnected()) {
         void this.adapter.send(encodePortValueRequest(port)).catch(() => {});
@@ -256,8 +236,17 @@ export class VehicleDriver {
     });
   }
 
-  private stopTelemetryPoll(): void {
+  private clearSafety(): void {
+    this.activeWatchdogPort = null;
     this.poller.stop();
+    this.watchdog.clear();
+  }
+
+  private resetActiveOperations(): void {
+    this.opGeneration += 1;
+    this.speedCalCompleted = false;
+    this.clearSafety();
+    this.aborts.abortAll();
   }
 
   private resetWatchdog(): void {
@@ -279,8 +268,11 @@ export class VehicleDriver {
       packet,
       () => this.resetWatchdog(),
       () => {
-        if (this.state === 'DRIVING' || this.state === 'CALIBRATING') void this.emergencyStop();
+        if (this.state === 'READY' || this.state === 'DRIVING' || this.state === 'CALIBRATING') {
+          void this.emergencyStop();
+        }
       },
+      this.activeWatchdogPort,
     );
     if (changed) {
       for (const listener of Array.from(this.updateListeners)) listener();
@@ -288,9 +280,7 @@ export class VehicleDriver {
   };
 
   private handleDisconnect = (): void => {
-    this.stopTelemetryPoll();
-    this.watchdog.clear();
-    this.aborts.abortAll();
+    this.resetActiveOperations();
     this.transitionState(
       this.state === 'DRIVING' || this.state === 'CALIBRATING' ? 'EMERGENCY_STOP' : 'DISCONNECTED',
     );

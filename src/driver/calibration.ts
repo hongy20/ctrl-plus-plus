@@ -109,7 +109,7 @@ export interface SteeringCalibrationOptions {
   adapter: HubAdapter;
   steerPort: number;
   addPortValueListener: (cb: PortValueListener) => () => void;
-  onTick: () => void;
+  onTick?: () => void;
   onAbortRegistered: (abort: () => void) => void;
   isCalibrating: () => boolean;
 }
@@ -186,7 +186,8 @@ export function runSpeedCalRun(options: SpeedCalRunOptions): Promise<void> {
 
   let startAngle: number | null = initialAngle;
 
-  return new Promise<void>((resolve) => {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
     let removeListener: (() => void) | null = null;
 
     const cleanup = () => {
@@ -196,9 +197,22 @@ export function runSpeedCalRun(options: SpeedCalRunOptions): Promise<void> {
       }
     };
 
-    const abort = () => {
+    const finishResolve = () => {
+      if (settled) return;
+      settled = true;
       cleanup();
       resolve();
+    };
+
+    const finishReject = (err: unknown) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(err);
+    };
+
+    const abort = () => {
+      finishResolve();
     };
     onAbortRegistered?.(abort);
 
@@ -210,14 +224,12 @@ export function runSpeedCalRun(options: SpeedCalRunOptions): Promise<void> {
       const deltaDeg = Math.abs(value - startAngle);
       if (deltaDeg >= targetDeg) {
         cleanup();
-        void adapter.send(encodeStartSpeed(drivePort, 0)).then(() => {
-          resolve();
-        });
+        adapter.send(encodeStartSpeed(drivePort, 0)).then(finishResolve, finishReject);
       }
     };
 
     removeListener = addPortValueListener(onPortValue);
-    void adapter.send(encodeStartSpeed(drivePort, 40));
+    adapter.send(encodeStartSpeed(drivePort, 40)).catch(finishReject);
   });
 }
 

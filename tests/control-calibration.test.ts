@@ -370,6 +370,7 @@ describe('VehicleDriver Control & Calibration (CTL-02..CTL-06, CAL-01..CAL-03)',
 
     // Advance enough ticks for full deceleration to complete
     for (let i = 0; i < 100; i++) {
+      adapter.emitMessage(makePortValuePacket(0x00, i));
       await vi.advanceTimersByTimeAsync(tickMs);
     }
     await brakePromise;

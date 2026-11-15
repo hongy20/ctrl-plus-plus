@@ -116,6 +116,7 @@ export class TelemetryManager {
     packet: Uint8Array,
     onResetWatchdog: () => void,
     onLowBatteryCutoff: () => void,
+    requiredPort?: number | null,
   ): boolean {
     const res = parseLwpPacket(packet, this.telemetry);
     if (res.kind === 'attached_io') {
@@ -137,7 +138,9 @@ export class TelemetryManager {
       return true;
     }
     if (res.kind === 'port_value') {
-      onResetWatchdog();
+      if (requiredPort == null || res.telemetry.port === requiredPort) {
+        onResetWatchdog();
+      }
       this.telemetry.set(res.telemetry.port, res.telemetry);
       for (const listener of Array.from(this.portValueListeners)) {
         listener(res.telemetry.port, res.telemetry.angleDeg, res.now);
@@ -145,6 +148,12 @@ export class TelemetryManager {
       return true;
     }
     return false;
+  }
+
+  resetSession(): void {
+    this.telemetry.clear();
+    this.attachedPorts.clear();
+    this.hubProperties.clear();
   }
 
   clear(): void {

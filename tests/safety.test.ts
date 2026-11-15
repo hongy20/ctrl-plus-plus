@@ -297,7 +297,7 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
     expect(driver.getState()).toBe('DRIVING');
 
     adapter.sentPackets = [];
-    adapter.emitMessage(makeBatteryPacket(LOW_BATTERY_CUTOFF_PCT - 1));
+    adapter.emitMessage(new Uint8Array([0x06, 0x00, 0x01, 0x06, 0x06, LOW_BATTERY_CUTOFF_PCT - 1]));
     await Promise.resolve();
 
     expect(driver.getState()).not.toBe('DRIVING');
@@ -361,6 +361,38 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
 
     adapter.sentPackets = [];
     await driver.emergencyStop();
+    expect(driver.getState()).toBe('EMERGENCY_STOP');
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x00)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x01)).toBe(true);
+  });
+
+  it('tracks watchdog per required port, enforces low-battery cutoff in READY, and requires completed speed run before saveSpeedCal', async () => {
+    await driver.connect();
+    await driver.setSpeed(1.0);
+
+    // Steering port packet (0x01) must not mask drive port (0x00) silence
+    vi.advanceTimersByTime(WATCHDOG_TIMEOUT_MS - 50);
+    adapter.emitMessage(makePortValuePacket(0x01, 15));
+    vi.advanceTimersByTime(51);
+    await Promise.resolve();
+    expect(driver.getState()).toBe('EMERGENCY_STOP');
+
+    await driver.resetEmergencyStop();
+    expect(driver.getState()).toBe('READY');
+
+    // Speed cal run not completed -> saveSpeedCal rejects
+    const calRun = driver.startSpeedCalRun();
+    await expect(driver.saveSpeedCal(1.0)).rejects.toThrow();
+    await driver.emergencyStop();
+    await calRun;
+
+    await driver.resetEmergencyStop();
+    expect(driver.getState()).toBe('READY');
+
+    // Low-battery in READY triggers emergencyStop
+    adapter.sentPackets = [];
+    adapter.emitMessage(new Uint8Array([0x06, 0x00, 0x01, 0x06, 0x06, LOW_BATTERY_CUTOFF_PCT - 1]));
+    await Promise.resolve();
     expect(driver.getState()).toBe('EMERGENCY_STOP');
     expect(getZeroPowerPackets(adapter.sentPackets, 0x00)).toBe(true);
     expect(getZeroPowerPackets(adapter.sentPackets, 0x01)).toBe(true);

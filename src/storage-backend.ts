@@ -8,6 +8,9 @@ export function getStorageKey(hubId: string): string {
 }
 
 export function safeGetItem(key: string): string | null {
+  if (memoryStorage.has(key)) {
+    return memoryStorage.get(key) ?? null;
+  }
   try {
     if (typeof localStorage !== 'undefined') {
       return localStorage.getItem(key);
@@ -15,13 +18,14 @@ export function safeGetItem(key: string): string | null {
   } catch {
     // Fall back to in-memory storage when localStorage is blocked
   }
-  return memoryStorage.get(key) ?? null;
+  return null;
 }
 
 export function safeSetItem(key: string, value: string): void {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(key, value);
+      memoryStorage.delete(key);
       return;
     }
   } catch {
@@ -31,15 +35,14 @@ export function safeSetItem(key: string, value: string): void {
 }
 
 export function safeRemoveItem(key: string): void {
+  memoryStorage.delete(key);
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(key);
-      return;
     }
   } catch {
-    // Fall back to in-memory storage when localStorage is blocked
+    // Ignore storage removal errors when localStorage is blocked
   }
-  memoryStorage.delete(key);
 }
 
 export function safeListHubKeys(): string[] {
@@ -52,7 +55,6 @@ export function safeListHubKeys(): string[] {
           keys.add(key);
         }
       }
-      return Array.from(keys);
     }
   } catch {
     // Fall back to in-memory keys when localStorage is blocked

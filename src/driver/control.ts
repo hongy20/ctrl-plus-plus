@@ -74,7 +74,7 @@ export function calculateBrakeStep(
 
 export interface ProgressiveBrakeCallbacks {
   isDriving: () => boolean;
-  onTick: () => void;
+  onTick?: () => void;
   onSpeedStep: (speedMps: number) => void;
   onHoldBrake: () => Promise<void>;
   onAbortRegistered: (abort: () => void) => void;
@@ -120,7 +120,7 @@ export function executeProgressiveBrake(
         return;
       }
 
-      callbacks.onTick();
+      callbacks.onTick?.();
       const step = calculateBrakeStep(speedMps, intensity, BRAKE_TICK_HZ);
       speedMps = step.nextSpeedMps;
 
@@ -133,7 +133,10 @@ export function executeProgressiveBrake(
       const profile = getProfile();
       const motorSpeed = calculateMotorSpeed(speedMps, profile, vehicle);
       callbacks.onSpeedStep(speedMps);
-      adapter.send(encodeStartSpeed(vehicle.drivePort, motorSpeed)).catch(reject);
+      adapter.send(encodeStartSpeed(vehicle.drivePort, motorSpeed)).catch((err) => {
+        cleanup();
+        reject(err);
+      });
     }, tickMs);
   });
 }
@@ -183,7 +186,7 @@ export interface BrakeRoutineOptions {
   currentSpeedMps: number;
   intensity?: number;
   isDriving: () => boolean;
-  onTick: () => void;
+  onTick?: () => void;
   onSpeedStep: (speedMps: number) => void;
   onHoldBrake: () => Promise<void>;
   onAbortRegistered: (abort: () => void) => void;
