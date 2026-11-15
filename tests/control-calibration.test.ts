@@ -1,13 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MockHubAdapter } from './mock-hub-adapter';
 import { decodeLwpMessage } from '../src/lego-protocol';
-import { listRememberedHubs, saveHubCalibration, updateHubParameters } from '../src/storage';
+import { getVehicleProfile } from '../src/profile';
+import { getOrCreateHubProfile, listRememberedHubs, saveHubCalibration, updateHubParameters } from '../src/storage';
 import {
+  calculateBrakeTapTargetMps,
+  calculateMaxSpeedMps,
+  calculateTelemetrySpeedMps,
+  normalizeTiltAxis,
+} from '../src/driver/control';
+import {
+  BRAKE_TAP_MAX_MS,
+  BRAKE_TAP_STEP_RATIO,
   BRAKE_TICK_HZ,
   HOLD_BRAKE_SPEED_MPS,
   STALL_HOLD_MS,
   STALL_SPEED_DEG_S,
   TELEMETRY_MIN_HZ,
+  TILT_DEADZONE_DEG,
+  TILT_MAX_DEG,
   VehicleDriver,
 } from '../src/vehicle-driver';
 
@@ -398,5 +409,110 @@ describe('VehicleDriver Control & Calibration (CTL-02..CTL-06, CAL-01..CAL-03)',
     }
 
     expect(driver.getState()).toBe('READY');
+  });
+
+  it('CTL-06: brake(intensity, targetSpeedMps) ramps smoothly to a non-zero targetSpeedMps and remains in DRIVING without sending hold-brake 127', async () => {
+    vi.useFakeTimers();
+    await driver.connect();
+
+    await driver.setSpeed(2.0);
+    expect(driver.getState()).toBe('DRIVING');
+    adapter.sentPackets.length = 0;
+
+    const p = driver.brake(1.0, 1.0);
+    const tickMs = 1000 / BRAKE_TICK_HZ;
+
+    for (let i = 0; i < 40; i++) {
+      adapter.emitMessage(makePortValuePacket(0x00, i));
+      await vi.advanceTimersByTimeAsync(tickMs);
+    }
+    await p;
+
+    const cmds = getStartSpeedPackets(adapter.sentPackets, 0x00);
+    expect(cmds.length).toBeGreaterThanOrEqual(2);
+    const magnitudes = cmds.map((c) => Math.abs(c.speed));
+    for (let i = 1; i < magnitudes.length; i++) {
+      expect(magnitudes[i]!).toBeLessThanOrEqual(magnitudes[i - 1]!);
+    }
+    expect(magnitudes[magnitudes.length - 1]!).toBeGreaterThan(0);
+
+    const holdBrakePacket = adapter.sentPackets.find(
+      (pkt) => pkt[2] === 0x81 && pkt[3] === 0x00 && pkt[5] === 0x51 && pkt[7] === 127,
+    );
+    expect(holdBrakePacket).toBeUndefined();
+    expect(driver.getState()).toBe('DRIVING');
+  });
+
+  it('CTL-06: calling brake() or setSpeed() while a brake ramp is in progress aborts the previous brake timer cleanly', async () => {
+    vi.useFakeTimers();
+    await driver.connect();
+
+    await driver.setSpeed(2.0);
+    adapter.sentPackets.length = 0;
+
+    const firstBrake = driver.brake(1.0, 1.0);
+    const tickMs = 1000 / BRAKE_TICK_HZ;
+
+    for (let i = 0; i < 2; i++) {
+      adapter.emitMessage(makePortValuePacket(0x00, i));
+      await vi.advanceTimersByTimeAsync(tickMs);
+    }
+
+    const secondBrake = driver.brake(1.0, 0);
+    for (let i = 2; i < 60; i++) {
+      adapter.emitMessage(makePortValuePacket(0x00, i));
+      await vi.advanceTimersByTimeAsync(tickMs);
+    }
+
+    await Promise.all([firstBrake, secondBrake]);
+
+    const driveMotorPackets = adapter.sentPackets.filter(
+      (pkt) => pkt[2] === 0x81 && pkt[3] === 0x00,
+    );
+    const lastMotorPkt = driveMotorPackets[driveMotorPackets.length - 1]!;
+    expect(lastMotorPkt[5]).toBe(0x51);
+    expect(lastMotorPkt[6]).toBe(0x00);
+    expect(lastMotorPkt[7]).toBe(127);
+    expect(driver.getState()).toBe('READY');
+  });
+
+  it('UI-09 / UI-12 / UI-13: exports M2 tuning constants and pure helpers (calculateMaxSpeedMps, calculateTelemetrySpeedMps, calculateBrakeTapTargetMps, normalizeTiltAxis)', () => {
+    expect(BRAKE_TAP_MAX_MS).toBeGreaterThan(0);
+    expect(BRAKE_TAP_STEP_RATIO).toBeGreaterThan(0);
+    expect(TILT_DEADZONE_DEG).toBeGreaterThan(0);
+    expect(TILT_MAX_DEG).toBeGreaterThan(TILT_DEADZONE_DEG);
+
+    const vehicle = getVehicleProfile('42124');
+    const profile = getOrCreateHubProfile('hub-m2-helpers', 'M2 Hub', '42124');
+    const expectedCircumferenceM = Math.PI * (profile.tireDiameterMm / 1000);
+    const expectedMaxSpeedMps = 12 * expectedCircumferenceM * profile.calibration.kCal;
+
+    expect(calculateMaxSpeedMps(profile, vehicle)).toBeCloseTo(expectedMaxSpeedMps, 6);
+
+    // 42124 has drivePolarity = -1; negative encoder deg/s corresponds to positive forward m/s
+    const forwardMps = calculateTelemetrySpeedMps(-360, profile, vehicle);
+    expect(forwardMps).toBeCloseTo(expectedCircumferenceM * profile.calibration.kCal, 6);
+    const reverseMps = calculateTelemetrySpeedMps(360, profile, vehicle);
+    expect(reverseMps).toBeCloseTo(-expectedCircumferenceM * profile.calibration.kCal, 6);
+
+    // calculateBrakeTapTargetMps steps toward 0 by maxSpeedMps * BRAKE_TAP_STEP_RATIO without crossing 0
+    const maxMps = 2.0;
+    const step = maxMps * BRAKE_TAP_STEP_RATIO;
+    expect(calculateBrakeTapTargetMps(1.5, maxMps, BRAKE_TAP_STEP_RATIO)).toBeCloseTo(1.5 - step, 6);
+    expect(calculateBrakeTapTargetMps(0.1, maxMps, BRAKE_TAP_STEP_RATIO)).toBe(0);
+    expect(calculateBrakeTapTargetMps(-1.5, maxMps, BRAKE_TAP_STEP_RATIO)).toBeCloseTo(-1.5 + step, 6);
+    expect(calculateBrakeTapTargetMps(-0.1, maxMps, BRAKE_TAP_STEP_RATIO)).toBe(0);
+
+    // normalizeTiltAxis: 0 within ±TILT_DEADZONE_DEG, linear to ±TILT_MAX_DEG, clamped to [-1, 1]
+    expect(normalizeTiltAxis(10, 10, TILT_DEADZONE_DEG, TILT_MAX_DEG)).toBe(0);
+    expect(normalizeTiltAxis(10 + TILT_DEADZONE_DEG, 10, TILT_DEADZONE_DEG, TILT_MAX_DEG)).toBe(0);
+    expect(normalizeTiltAxis(10 - TILT_DEADZONE_DEG, 10, TILT_DEADZONE_DEG, TILT_MAX_DEG)).toBe(0);
+
+    const midDeg = (TILT_DEADZONE_DEG + TILT_MAX_DEG) / 2;
+    expect(normalizeTiltAxis(10 + midDeg, 10, TILT_DEADZONE_DEG, TILT_MAX_DEG)).toBeCloseTo(0.5, 6);
+    expect(normalizeTiltAxis(10 - midDeg, 10, TILT_DEADZONE_DEG, TILT_MAX_DEG)).toBeCloseTo(-0.5, 6);
+
+    expect(normalizeTiltAxis(10 + TILT_MAX_DEG + 15, 10, TILT_DEADZONE_DEG, TILT_MAX_DEG)).toBe(1);
+    expect(normalizeTiltAxis(10 - TILT_MAX_DEG - 15, 10, TILT_DEADZONE_DEG, TILT_MAX_DEG)).toBe(-1);
   });
 });

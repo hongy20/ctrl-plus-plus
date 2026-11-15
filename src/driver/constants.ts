@@ -6,3 +6,7 @@ export const HOLD_BRAKE_SPEED_MPS = 0.05;
 export const WATCHDOG_TIMEOUT_MS = 200;
 export const LOW_BATTERY_CUTOFF_PCT = 10;
 export const SPEED_CAL_TARGET_DEG = 3600;
+export const BRAKE_TAP_MAX_MS = 250;
+export const BRAKE_TAP_STEP_RATIO = 0.2;
+export const TILT_DEADZONE_DEG = 5;
+export const TILT_MAX_DEG = 30;
