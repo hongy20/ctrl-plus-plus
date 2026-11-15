@@ -36,7 +36,7 @@ This table is the only place these values are stated. Code exports each one unde
 
 ### BLE Transport, Hub Discovery & Telemetry (LEGO Wireless Protocol)
 - **CTL-01:** `WHEN connect() is invoked, THE WebBleHubAdapter SHALL open the browser Web Bluetooth chooser filtered by LEGO Wireless Protocol service UUID (00001623-1212-efde-1623-785feabcd123) and connect to the GATT characteristic (00001624-1212-efde-1623-785feabcd123).`
-- **CTL-02:** `WHEN connected, THE VehicleDriver SHALL query all LEGO Wireless Protocol Hub Properties (0x01..0x0D including Advertising Name 0x01, MAC Address 0x0D, FW/HW versions, RSSI, Battery Type) read-only, load the HubProfile (STR-01), set the Hub LED (Port 0x32) to the HubProfile's ledColor, subscribe to the profile's drive and steer port encoders (>= TELEMETRY_MIN_HZ), Hub Temperature (Port 0x3D), and Battery Level (Property 0x06), log Attached I/O ports (0x04), and enter READY.`
+- **CTL-02:** `WHEN connected, THE VehicleDriver SHALL query all LEGO Wireless Protocol Hub Properties (0x01..0x0D including Advertising Name 0x01, Manufacturer 0x08, Radio FW 0x09, MAC Address 0x0D, FW/HW versions, RSSI, Battery Type) read-only, load the HubProfile (STR-01), set the Hub LED (Port 0x32) to the HubProfile's ledColor, subscribe to the profile's drive and steer port position encoders (Mode 0x02 POS, >= TELEMETRY_MIN_HZ), Hub Temperature (Port 0x3D, Mode 0x00), and Battery Level (Property 0x06), log Attached I/O ports (0x04), and enter READY.`
 
 ### Calibration Interlock State
 - **CTL-03:** `WHILE in the CALIBRATING state, THE VehicleDriver SHALL reject standard teleop setSpeed() and setSteering() calls so calibration routines (CAL-01..CAL-03) have exclusive actuator control.`
@@ -44,7 +44,7 @@ This table is the only place these values are stated. Code exports each one unde
 ### Runtime Steering, Speed & Progressive Braking
 - **CTL-04:** `WHEN setSteering(angleNorm) is called with [-1.0, +1.0] in READY/DRIVING, THE VehicleDriver SHALL map angleNorm to the active HubProfile's clamped [leftLimit, rightLimit] around centerPos and command the steer port (LEGO Wireless Protocol GoToAbsolutePosition 0x0D).`
 - **CTL-05:** `WHEN setSpeed(targetMps) is called in READY/DRIVING, THE VehicleDriver SHALL map m/s to drive port speed percentage [-100, +100] using the active HubProfile's tireDiameterMm, kCal, and drivePolarity.`
-- **CTL-06:** `WHEN brake(intensity?) is called in READY/DRIVING (defaulting to HubProfile.defaultBrakeIntensity), THE VehicleDriver SHALL ramp speed down at BRAKE_TICK_HZ along a smooth deceleration curve (a = intensity * aMax) and engage motor hold-brake (127) only when |speed| < HOLD_BRAKE_SPEED_MPS.`
+- **CTL-06:** `WHEN brake(intensity?) is called in READY/DRIVING (defaulting to HubProfile.defaultBrakeIntensity), THE VehicleDriver SHALL ramp speed down at BRAKE_TICK_HZ along a smooth deceleration curve (a = intensity * aMax) and engage motor hold-brake (StartPower 0x51 mode 0x00 power 127) only when |speed| < HOLD_BRAKE_SPEED_MPS.`
 
 ### Hardware Fail-Safe & Watchdog
 - **CTL-07:** `WHEN BLE disconnects (gattserverdisconnected) or telemetry lags > WATCHDOG_TIMEOUT_MS while driving or calibrating, THE VehicleDriver SHALL immediately transition to EMERGENCY_STOP and cut motor power to 0.`
