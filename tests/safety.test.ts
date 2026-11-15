@@ -38,19 +38,16 @@ function makePortValuePacket(port: number, value: number): Uint8Array {
   return buf;
 }
 
-function getStartSpeedPackets(
-  packets: Uint8Array[],
-  port: number,
-): Array<{ speed: number; maxPower: number }> {
-  return packets
-    .filter((p) => p.length >= 9 && p[2] === 0x81 && p[3] === port && p[5] === 0x07)
-    .map((p) => {
-      const view = new DataView(p.buffer, p.byteOffset, p.byteLength);
-      return {
-        speed: view.getInt8(6),
-        maxPower: p[7]!,
-      };
-    });
+function getZeroPowerPackets(packets: Uint8Array[], port: number): boolean {
+  return packets.some(
+    (p) =>
+      p.length >= 8 &&
+      p[2] === 0x81 &&
+      p[3] === port &&
+      p[5] === 0x51 &&
+      p[6] === 0x00 &&
+      p[7] === 0x00,
+  );
 }
 
 function createMockLifecycleTargets(initialVisibility: DocumentVisibilityState = 'visible') {
@@ -115,12 +112,11 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
 
     adapter.sentPackets = [];
     vi.advanceTimersByTime(WATCHDOG_TIMEOUT_MS + 1);
+    await Promise.resolve();
 
     expect(driver.getState()).toBe('EMERGENCY_STOP');
-    const driveCmds = getStartSpeedPackets(adapter.sentPackets, 0x00);
-    const steerCmds = getStartSpeedPackets(adapter.sentPackets, 0x01);
-    expect(driveCmds.some((c) => c.speed === 0)).toBe(true);
-    expect(steerCmds.some((c) => c.speed === 0)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x00)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x01)).toBe(true);
   });
 
   it('CTL-07: resets watchdog timer when telemetry arrives within WATCHDOG_TIMEOUT_MS and triggers after subsequent timeout', async () => {
@@ -146,12 +142,11 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
 
     adapter.sentPackets = [];
     vi.advanceTimersByTime(WATCHDOG_TIMEOUT_MS + 1);
+    await Promise.resolve();
 
     expect(driver.getState()).toBe('EMERGENCY_STOP');
-    const driveCmds = getStartSpeedPackets(adapter.sentPackets, 0x00);
-    const steerCmds = getStartSpeedPackets(adapter.sentPackets, 0x01);
-    expect(driveCmds.some((c) => c.speed === 0)).toBe(true);
-    expect(steerCmds.some((c) => c.speed === 0)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x00)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x01)).toBe(true);
 
     void calPromise;
   });
@@ -183,8 +178,8 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
     adapter.sentPackets = [];
     await driver.emergencyStop();
     expect(driver.getState()).toBe('EMERGENCY_STOP');
-    expect(getStartSpeedPackets(adapter.sentPackets, 0x00).some((c) => c.speed === 0)).toBe(true);
-    expect(getStartSpeedPackets(adapter.sentPackets, 0x01).some((c) => c.speed === 0)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x00)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x01)).toBe(true);
 
     await driver.resetEmergencyStop();
     await driver.setSpeed(1.0);
@@ -193,8 +188,8 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
     adapter.sentPackets = [];
     await driver.emergencyStop();
     expect(driver.getState()).toBe('EMERGENCY_STOP');
-    expect(getStartSpeedPackets(adapter.sentPackets, 0x00).some((c) => c.speed === 0)).toBe(true);
-    expect(getStartSpeedPackets(adapter.sentPackets, 0x01).some((c) => c.speed === 0)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x00)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x01)).toBe(true);
 
     await driver.resetEmergencyStop();
     void driver.startSpeedCalRun();
@@ -203,8 +198,8 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
     adapter.sentPackets = [];
     await driver.emergencyStop();
     expect(driver.getState()).toBe('EMERGENCY_STOP');
-    expect(getStartSpeedPackets(adapter.sentPackets, 0x00).some((c) => c.speed === 0)).toBe(true);
-    expect(getStartSpeedPackets(adapter.sentPackets, 0x01).some((c) => c.speed === 0)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x00)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x01)).toBe(true);
   });
 
   it('CTL-08: resetEmergencyStop() returns to READY while BLE is connected and rejects when BLE is disconnected', async () => {
@@ -306,8 +301,8 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
     await Promise.resolve();
 
     expect(driver.getState()).not.toBe('DRIVING');
-    expect(getStartSpeedPackets(adapter.sentPackets, 0x00).some((c) => c.speed === 0)).toBe(true);
-    expect(getStartSpeedPackets(adapter.sentPackets, 0x01).some((c) => c.speed === 0)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x00)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x01)).toBe(true);
 
     await expect(driver.setSpeed(1.0)).rejects.toThrow();
     await expect(driver.setSteering(0.5)).rejects.toThrow();
@@ -325,11 +320,49 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
     await Promise.resolve();
 
     expect(calDriver.getState()).not.toBe('CALIBRATING');
-    expect(getStartSpeedPackets(calAdapter.sentPackets, 0x00).some((c) => c.speed === 0)).toBe(true);
-    expect(getStartSpeedPackets(calAdapter.sentPackets, 0x01).some((c) => c.speed === 0)).toBe(true);
+    expect(getZeroPowerPackets(calAdapter.sentPackets, 0x00)).toBe(true);
+    expect(getZeroPowerPackets(calAdapter.sentPackets, 0x01)).toBe(true);
     await expect(calDriver.setSpeed(1.0)).rejects.toThrow();
 
     void calPromise;
     calDriver.destroy();
+  });
+
+  it('allows reconnecting after a mid-drive BLE disconnect and stops motors even when localStorage throws', async () => {
+    await driver.connect();
+    await driver.setSpeed(1.0);
+    adapter.simulateDisconnect();
+    expect(driver.getState()).toBe('EMERGENCY_STOP');
+
+    await driver.connect();
+    expect(driver.getState()).toBe('READY');
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: {
+        get length() {
+          throw new Error('SecurityError');
+        },
+        key() {
+          throw new Error('SecurityError');
+        },
+        getItem() {
+          throw new Error('SecurityError');
+        },
+        setItem() {
+          throw new Error('SecurityError');
+        },
+        removeItem() {
+          throw new Error('SecurityError');
+        },
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    adapter.sentPackets = [];
+    await driver.emergencyStop();
+    expect(driver.getState()).toBe('EMERGENCY_STOP');
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x00)).toBe(true);
+    expect(getZeroPowerPackets(adapter.sentPackets, 0x01)).toBe(true);
   });
 });

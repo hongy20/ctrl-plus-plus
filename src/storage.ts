@@ -5,12 +5,14 @@ import {
   type HubProfile,
 } from './contracts';
 import { getVehicleProfile } from './profile';
-
-const STORAGE_KEY_PREFIX = 'ctrlpp:hub:';
-
-function getStorageKey(hubId: string): string {
-  return `${STORAGE_KEY_PREFIX}${hubId}`;
-}
+import {
+  getStorageKey,
+  isValidHubProfile,
+  safeGetItem,
+  safeListHubKeys,
+  safeRemoveItem,
+  safeSetItem,
+} from './storage-backend';
 
 function getRandomLedColor(): HubLedColor {
   const index = Math.floor(Math.random() * HUB_LED_COLORS.length);
@@ -18,23 +20,20 @@ function getRandomLedColor(): HubLedColor {
 }
 
 function readHubProfile(hubId: string): HubProfile | null {
-  const raw = localStorage.getItem(getStorageKey(hubId));
+  const raw = safeGetItem(getStorageKey(hubId));
   if (!raw) {
     return null;
   }
   try {
     const parsed = JSON.parse(raw) as unknown;
-    if (parsed && typeof parsed === 'object' && 'hubId' in parsed) {
-      return parsed as HubProfile;
-    }
-    return null;
+    return isValidHubProfile(parsed) ? parsed : null;
   } catch {
     return null;
   }
 }
 
 function writeHubProfile(profile: HubProfile): void {
-  localStorage.setItem(getStorageKey(profile.hubId), JSON.stringify(profile));
+  safeSetItem(getStorageKey(profile.hubId), JSON.stringify(profile));
 }
 
 export interface HubParametersPatch {
@@ -180,26 +179,15 @@ export function updateHubParameters(
 
 export function listRememberedHubs(): HubProfile[] {
   const hubs: HubProfile[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (!key || !key.startsWith(STORAGE_KEY_PREFIX)) {
-      continue;
-    }
-    const raw = localStorage.getItem(key);
+  for (const key of safeListHubKeys()) {
+    const raw = safeGetItem(key);
     if (!raw) {
       continue;
     }
     try {
       const parsed = JSON.parse(raw) as unknown;
-      if (
-        parsed &&
-        typeof parsed === 'object' &&
-        'hubId' in parsed &&
-        typeof (parsed as { hubId: unknown }).hubId === 'string' &&
-        'lastConnectedAt' in parsed &&
-        typeof (parsed as { lastConnectedAt: unknown }).lastConnectedAt === 'number'
-      ) {
-        hubs.push(parsed as HubProfile);
+      if (isValidHubProfile(parsed)) {
+        hubs.push(parsed);
       }
     } catch {
       // Ignore corrupt JSON per STR-04
@@ -231,5 +219,5 @@ export function resetHubCalibration(hubId: string): HubProfile {
 }
 
 export function forgetHub(hubId: string): void {
-  localStorage.removeItem(getStorageKey(hubId));
+  safeRemoveItem(getStorageKey(hubId));
 }

@@ -97,6 +97,17 @@ export function encodeSetHubLed(color: number, port = 0x32): Uint8Array {
   return new Uint8Array([0x08, 0x00, 0x81, port, 0x11, 0x51, 0x00, color]);
 }
 
+export function encodeStartPower(port: number, power = 0): Uint8Array {
+  const buf = new Uint8Array([0x08, 0x00, 0x81, port, 0x11, 0x51, 0x00, 0x00]);
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  view.setInt8(7, power);
+  return buf;
+}
+
+export function encodePortValueRequest(port: number): Uint8Array {
+  return new Uint8Array([0x05, 0x00, 0x21, port, 0x00]);
+}
+
 export function decodeLwpMessage(packet: Uint8Array): DecodedLwpMessage {
   if (packet.length < 3) {
     return { messageType: 0, raw: packet };

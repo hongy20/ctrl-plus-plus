@@ -4,13 +4,13 @@ export const LED_COLOR_MAP: Record<number, string> = {
   1: '#ff69b4', // Pink
   2: '#800080', // Purple
   3: '#0000ff', // Blue
-  4: '#00ffff', // Cyan
-  5: '#00ff00', // Green
-  6: '#ffff00', // Yellow
-  7: '#ffa500', // Orange
-  8: '#ff0000', // Red
-  9: '#ffffff', // White
-  10: '#333333', // None/Dark
+  4: '#87cefa', // Light Blue
+  5: '#00ffff', // Cyan
+  6: '#00ff00', // Green
+  7: '#ffff00', // Yellow
+  8: '#ffa500', // Orange
+  9: '#ff0000', // Red
+  10: '#ffffff', // White
 };
 
 export interface TopBarProps {
@@ -38,7 +38,7 @@ export function TopBar({
         <span
           data-testid="led-swatch"
           className="inline-block w-4 h-4 rounded-full border border-gray-400"
-          style={{ backgroundColor: LED_COLOR_MAP[ledColor ?? 9] ?? '#ffffff' }}
+          style={{ backgroundColor: LED_COLOR_MAP[ledColor ?? 10] ?? '#ffffff' }}
         />
         <span className="font-semibold">{activeHubName || 'Ctrl++'}</span>
         <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-200 uppercase tracking-wider">

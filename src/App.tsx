@@ -30,8 +30,9 @@ export function App(props: AppProps): React.JSX.Element {
     };
   }, [driver]);
 
-  // Clean up driver on unmount
+  // Attach driver listeners on mount (including StrictMode remounts) and clean up on unmount
   useEffect(() => {
+    driver.attach();
     return () => {
       driver.destroy();
     };

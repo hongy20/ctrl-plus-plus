@@ -48,6 +48,7 @@ export class WebBleHubAdapter implements HubAdapter {
   private hubName: string | null = null;
   private messageListeners = new Set<(packet: Uint8Array) => void>();
   private disconnectListeners = new Set<() => void>();
+  private writeChain: Promise<void> = Promise.resolve();
 
   async connect(): Promise<void> {
     if (this.connected || this.connecting) {
@@ -190,16 +191,20 @@ export class WebBleHubAdapter implements HubAdapter {
     return this.hubName;
   }
 
-  async send(packet: Uint8Array): Promise<void> {
-    if (!this.characteristic) {
-      throw new Error('Cannot send packet: Not connected');
-    }
+  send(packet: Uint8Array): Promise<void> {
+    const run = this.writeChain.then(async () => {
+      if (!this.connected || !this.characteristic) {
+        throw new Error('Cannot send packet: Not connected');
+      }
 
-    if (typeof this.characteristic.writeValueWithResponse === 'function') {
-      await this.characteristic.writeValueWithResponse(packet);
-    } else if (typeof this.characteristic.writeValue === 'function') {
-      await this.characteristic.writeValue(packet);
-    }
+      if (typeof this.characteristic.writeValueWithResponse === 'function') {
+        await this.characteristic.writeValueWithResponse(packet);
+      } else if (typeof this.characteristic.writeValue === 'function') {
+        await this.characteristic.writeValue(packet);
+      }
+    });
+    this.writeChain = run.catch(() => {});
+    return run;
   }
 
   onMessage(callback: (packet: Uint8Array) => void): () => void {

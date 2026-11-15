@@ -1,4 +1,4 @@
-import { WATCHDOG_TIMEOUT_MS } from './constants';
+import { TELEMETRY_MIN_HZ, WATCHDOG_TIMEOUT_MS } from './constants';
 
 export class WatchdogTimer {
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -57,6 +57,23 @@ export class AbortRegistry {
       const a = this.stallAbort;
       this.stallAbort = null;
       a();
+    }
+  }
+}
+
+export class TelemetryPoller {
+  private timer: ReturnType<typeof setInterval> | null = null;
+
+  start(onPoll: () => void): void {
+    this.stop();
+    const intervalMs = Math.max(20, Math.floor(1000 / TELEMETRY_MIN_HZ));
+    this.timer = setInterval(onPoll, intervalMs);
+  }
+
+  stop(): void {
+    if (this.timer !== null) {
+      clearInterval(this.timer);
+      this.timer = null;
     }
   }
 }

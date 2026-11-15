@@ -29,6 +29,7 @@ export function ConnectTab({
 }: ConnectTabProps): React.JSX.Element {
   const [isConnecting, setIsConnecting] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(profile?.name ?? '');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -41,51 +42,87 @@ export function ConnectTab({
     Boolean((navigator as unknown as { bluetooth?: unknown }).bluetooth);
 
   const handleConnect = async () => {
+    setErrorMsg(null);
     setIsConnecting(true);
     try {
       await driver.connect();
       onUpdate();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to connect to hub');
     } finally {
       setIsConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
-    await driver.disconnect();
-    onUpdate();
+    setErrorMsg(null);
+    try {
+      await driver.disconnect();
+      onUpdate();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to disconnect from hub');
+    }
   };
 
   const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setNicknameInput(val);
     if (profile && val.trim().length > 0) {
-      updateHubParameters(profile.hubId, { name: val });
-      onUpdate();
+      try {
+        setErrorMsg(null);
+        updateHubParameters(profile.hubId, { name: val });
+        onUpdate();
+      } catch (err) {
+        setErrorMsg(err instanceof Error ? err.message : 'Failed to update nickname');
+      }
     }
   };
 
   const handleSetLed = async (color: HubLedColor) => {
-    if (profile) {
-      updateHubParameters(profile.hubId, { ledColor: color });
-      onUpdate();
+    setErrorMsg(null);
+    try {
+      if (profile) {
+        updateHubParameters(profile.hubId, { ledColor: color });
+        onUpdate();
+      }
+      await adapter.send(encodeSetHubLed(color, 0x32));
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to update hub LED');
     }
-    await adapter.send(encodeSetHubLed(color, 0x32));
   };
 
   const handleResetCalibration = (hubId: string) => {
-    resetHubCalibration(hubId);
-    onUpdate();
+    setErrorMsg(null);
+    try {
+      resetHubCalibration(hubId);
+      onUpdate();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to reset calibration');
+    }
   };
 
   const handleForgetHub = (hubId: string) => {
-    forgetHub(hubId);
-    onUpdate();
+    setErrorMsg(null);
+    try {
+      forgetHub(hubId);
+      onUpdate();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to forget hub');
+    }
   };
 
   const rememberedHubs = listRememberedHubs();
 
   return (
     <div className="space-y-6">
+      {errorMsg && (
+        <div
+          role="alert"
+          className="p-3 bg-red-100 border border-red-300 text-red-900 rounded text-sm"
+        >
+          {errorMsg}
+        </div>
+      )}
       {/* UI-07: Compatibility Warning Banner */}
       {!isBluetoothSupported && (
         <div

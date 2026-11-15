@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, createElement } from 'react';
+import { act, createElement, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
@@ -168,7 +168,11 @@ describe('Mobile Web App Shell, Lifecycle & Views (UI-01, UI-04..UI-08)', () => 
     expect(header?.querySelector('[data-battery-warning="true"]')).not.toBeNull();
 
     await clickButton(container, /e-stop|emergency stop/i);
-    expect(adapter.sentPackets.some((p) => p[2] === 0x81 && p[3] === 0x00 && p[5] === 0x07 && p[6] === 0)).toBe(true);
+    expect(
+      adapter.sentPackets.some(
+        (p) => p[2] === 0x81 && p[3] === 0x00 && p[5] === 0x51 && p[6] === 0x00 && p[7] === 0,
+      ),
+    ).toBe(true);
     expect(findButton(container, /resume/i)).toBeDefined();
 
     await clickButton(container, /resume/i);
@@ -366,5 +370,37 @@ describe('Mobile Web App Shell, Lifecycle & Views (UI-01, UI-04..UI-08)', () => 
       'input[type="range"][aria-label="Steering"]',
     ) as HTMLInputElement | null;
     expect(steerSlider?.disabled).toBe(true);
+  });
+
+  it('keeps driver listeners active under React StrictMode, maps LED 9=red / 10=white, and shows connect error alert', async () => {
+    await act(async () => {
+      root!.render(createElement(StrictMode, null, createElement(App, { adapter })));
+    });
+
+    await clickButton(container, /^connect$/i);
+    await act(async () => {
+      adapter.emitMessage(makeBatteryPacket(42));
+    });
+    expect(container.querySelector('header')?.textContent).toContain('42%');
+
+    const led9Btn = container.querySelector('button[aria-label="LED Color 9"]') as HTMLButtonElement | null;
+    expect(led9Btn).not.toBeNull();
+    await act(async () => {
+      led9Btn!.click();
+    });
+    const swatch = container.querySelector('[data-testid="led-swatch"]') as HTMLElement | null;
+    expect(swatch?.style.backgroundColor).toBe('rgb(255, 0, 0)');
+
+    const led10Btn = container.querySelector('button[aria-label="LED Color 10"]') as HTMLButtonElement | null;
+    expect(led10Btn).not.toBeNull();
+    await act(async () => {
+      led10Btn!.click();
+    });
+    expect(swatch?.style.backgroundColor).toBe('rgb(255, 255, 255)');
+
+    await clickButton(container, /^disconnect$/i);
+    vi.spyOn(adapter, 'connect').mockRejectedValueOnce(new Error('Chooser cancelled'));
+    await clickButton(container, /^connect$/i);
+    expect(container.textContent).toContain('Chooser cancelled');
   });
 });
