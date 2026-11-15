@@ -34,10 +34,10 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
     if (!profile) return 0;
     const v = getVehicleProfile(profile.setId);
     const max = calculateMaxSpeedMps(profile, v);
-    return max > 0 ? Math.round((driver.getCurrentSpeedMps() / max) * 100) : 0;
+    return max > 0 ? Math.round((driver.getTargetSpeedMps() / max) * 100) : 0;
   });
   const [steerPct, setSteerPct] = useState(0);
-  const [cruiseHold, setCruiseHold] = useState(() => driver.getCurrentSpeedMps() !== 0);
+  const [cruiseHold, setCruiseHold] = useState(() => driver.getTargetSpeedMps() !== 0);
 
   const baselineRef = useRef<{ beta: number; gamma: number } | null>(null);
   const brakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -46,8 +46,8 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
   useEffect(() => {
     return driver.subscribe(() => {
       setTick((t) => t + 1);
-      const cur = driver.getCurrentSpeedMps();
-      setThrottlePct(maxSpeedMps > 0 ? Math.round((cur / maxSpeedMps) * 100) : 0);
+      const tgt = driver.getTargetSpeedMps();
+      setThrottlePct(maxSpeedMps > 0 ? Math.round((tgt / maxSpeedMps) * 100) : 0);
     });
   }, [driver, maxSpeedMps]);
 
@@ -139,7 +139,7 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
       brakeHoldTriggeredRef.current = false;
       return;
     }
-    const currentTargetMps = driver.getCurrentSpeedMps() || (throttlePct / 100) * maxSpeedMps;
+    const currentTargetMps = driver.getTargetSpeedMps() || (throttlePct / 100) * maxSpeedMps;
     const nextTargetMps = calculateBrakeTapTargetMps(currentTargetMps, maxSpeedMps, BRAKE_TAP_STEP_RATIO);
     const nextPct = maxSpeedMps > 0 ? Math.round((nextTargetMps / maxSpeedMps) * 100) : 0;
     setThrottlePct(nextPct);

@@ -479,6 +479,34 @@ describe('VehicleDriver Control & Calibration (CTL-02..CTL-06, CAL-01..CAL-03)',
     expect(driver.getState()).toBe('READY');
   });
 
+  it('CTL-06: calling driver.setSpeed() followed immediately by driver.brake() without awaiting completes brake ramp to 0 and transitions to READY', async () => {
+    vi.useFakeTimers();
+    await driver.connect();
+
+    adapter.sentPackets.length = 0;
+    const speedPromise = driver.setSpeed(2.0);
+    const brakePromise = driver.brake(1.0, 0);
+
+    const tickMs = 1000 / BRAKE_TICK_HZ;
+    for (let i = 0; i < 40; i++) {
+      adapter.emitMessage(makePortValuePacket(0x00, i));
+      await vi.advanceTimersByTimeAsync(tickMs);
+    }
+
+    await Promise.all([speedPromise, brakePromise]);
+
+    const driveMotorPackets = adapter.sentPackets.filter(
+      (pkt) => pkt[2] === 0x81 && pkt[3] === 0x00,
+    );
+    const lastMotorPkt = driveMotorPackets[driveMotorPackets.length - 1]!;
+    expect(lastMotorPkt[5]).toBe(0x51);
+    expect(lastMotorPkt[6]).toBe(0x00);
+    expect(lastMotorPkt[7]).toBe(127);
+    expect(driver.getState()).toBe('READY');
+    expect(driver.getTargetSpeedMps()).toBe(0);
+    expect(driver.getCurrentSpeedMps()).toBe(0);
+  });
+
   it('UI-09 / UI-12 / UI-13: exports M2 tuning constants and pure helpers (calculateMaxSpeedMps, calculateTelemetrySpeedMps, calculateBrakeTapTargetMps, normalizeTiltAxis)', () => {
     expect(BRAKE_TAP_MAX_MS).toBeGreaterThan(0);
     expect(BRAKE_TAP_STEP_RATIO).toBeGreaterThan(0);

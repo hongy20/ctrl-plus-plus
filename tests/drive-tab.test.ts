@@ -380,10 +380,10 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
     const brakeBtn = findButton(container, /^brake$/i);
     expect(brakeBtn).toBeDefined();
 
-    // Tap (< BRAKE_TAP_MAX_MS)
+    // Tap (< BRAKE_TAP_MAX_MS) steps 100% -> 80%
     await dispatchPointer(brakeBtn!, 'pointerdown');
     await act(async () => {
-      vi.advanceTimersByTime(Math.max(50, BRAKE_TAP_MAX_MS - 100));
+      vi.advanceTimersByTime(50);
     });
     await dispatchPointer(brakeBtn!, 'pointerup');
 
@@ -392,10 +392,25 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
     expect(brakeSpy.mock.calls[0]![1]).toBeCloseTo(expectedSteppedMps, 4);
     expect(container.textContent).toContain('80%');
 
+    // Second rapid tap before advancing ramp timer steps 80% -> 60%
+    const expectedSecondSteppedMps = maxSpeedMps * (1 - 2 * BRAKE_TAP_STEP_RATIO);
+    let activeBrakeBtn = findButton(container, /^brake$/i);
+    await dispatchPointer(activeBrakeBtn!, 'pointerdown');
+    await act(async () => {
+      vi.advanceTimersByTime(50);
+    });
+    await dispatchPointer(activeBrakeBtn!, 'pointerup');
+
+    expect(brakeSpy).toHaveBeenCalledTimes(2);
+    expect(brakeSpy.mock.calls[1]![0]).toBeUndefined();
+    expect(brakeSpy.mock.calls[1]![1]).toBeCloseTo(expectedSecondSteppedMps, 4);
+    expect(container.textContent).toContain('60%');
+
     brakeSpy.mockClear();
 
     // Hold (>= BRAKE_TAP_MAX_MS)
-    await dispatchPointer(brakeBtn!, 'pointerdown');
+    activeBrakeBtn = findButton(container, /^brake$/i);
+    await dispatchPointer(activeBrakeBtn!, 'pointerdown');
     await act(async () => {
       vi.advanceTimersByTime(BRAKE_TAP_MAX_MS);
     });
@@ -404,6 +419,6 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
     expect(brakeSpy.mock.calls[0]![1]).toBeUndefined();
     expect(throttleSlider!.value).toBe('0');
 
-    await dispatchPointer(brakeBtn!, 'pointerup');
+    await dispatchPointer(activeBrakeBtn!, 'pointerup');
   });
 });
