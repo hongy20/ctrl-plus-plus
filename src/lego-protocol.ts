@@ -124,7 +124,7 @@ export function decodeLwpMessage(packet: Uint8Array): DecodedLwpMessage {
 
     if (payloadStart >= packet.length) {
       value = '';
-    } else if (property === 0x01) {
+    } else if (property === 0x01 || property === 0x08 || property === 0x09) {
       value = new TextDecoder().decode(packet.subarray(payloadStart));
     } else if (property === 0x03 || property === 0x04) {
       const b0 = packet[payloadStart];

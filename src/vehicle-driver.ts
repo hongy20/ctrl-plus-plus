@@ -71,9 +71,7 @@ export class VehicleDriver {
   }
 
   async connect(): Promise<void> {
-    const canReconnectFromEstop =
-      this.state === 'EMERGENCY_STOP' && !this.adapter.isConnected();
-    if (this.state !== 'DISCONNECTED' && !canReconnectFromEstop) {
+    if (this.state !== 'DISCONNECTED' && !(this.state === 'EMERGENCY_STOP' && !this.adapter.isConnected())) {
       throw new Error(`Cannot connect in state ${this.state}`);
     }
     this.telemetryMgr.resetSession();
@@ -140,7 +138,8 @@ export class VehicleDriver {
     assertOperational('startSpeedCalRun', this.state, this.isLowBatteryCutoff());
     const profile = this.requireProfile();
     this.speedCalCompleted = false;
-    const drivePort = getVehicleProfile(profile.setId).drivePort;
+    const vehicle = getVehicleProfile(profile.setId);
+    const drivePort = vehicle.drivePort;
     const gen = ++this.opGeneration;
     this.transitionState('CALIBRATING');
     this.armSafety(drivePort);
@@ -150,6 +149,7 @@ export class VehicleDriver {
       await runSpeedCalRun({
         adapter: this.adapter,
         drivePort,
+        drivePolarity: vehicle.drivePolarity,
         initialAngle: angle,
         addPortValueListener: (cb) => this.telemetryMgr.addPortValueListener(cb),
         onAbortRegistered: (abort) => this.aborts.setSpeedCalAbort(abort),
