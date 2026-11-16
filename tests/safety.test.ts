@@ -135,6 +135,27 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
     expect(driver.getState()).toBe('EMERGENCY_STOP');
   });
 
+  it('CTL-07: repeated setSpeed calls without incoming telemetry do not reset watchdog and trigger EMERGENCY_STOP when WATCHDOG_TIMEOUT_MS elapses', async () => {
+    await driver.connect();
+    await driver.setSpeed(1.0);
+    expect(driver.getState()).toBe('DRIVING');
+
+    vi.advanceTimersByTime(50);
+    await driver.setSpeed(1.5);
+    expect(driver.getState()).toBe('DRIVING');
+
+    vi.advanceTimersByTime(50);
+    await driver.setSpeed(2.0);
+    expect(driver.getState()).toBe('DRIVING');
+
+    vi.advanceTimersByTime(50);
+    await driver.setSpeed(1.2);
+    expect(driver.getState()).toBe('DRIVING');
+
+    vi.advanceTimersByTime(51);
+    expect(driver.getState()).toBe('EMERGENCY_STOP');
+  });
+
   it('CTL-07: triggers EMERGENCY_STOP and cuts drive/steer power to 0 when telemetry lags > WATCHDOG_TIMEOUT_MS while CALIBRATING', async () => {
     await driver.connect();
     const calPromise = driver.startSpeedCalRun();
@@ -308,6 +329,13 @@ describe('Safety Watchdog, E-Stop & Mobile Lifecycle (CTL-07, CTL-08, UI-02, UI-
     await expect(driver.setSteering(0.5)).rejects.toThrow();
     await expect(driver.calibrateSteering()).rejects.toThrow();
     await expect(driver.startSpeedCalRun()).rejects.toThrow();
+    await expect(driver.brake(undefined, 1.0)).rejects.toThrow();
+
+    await driver.resetEmergencyStop();
+    expect(driver.getState()).toBe('READY');
+    await expect(driver.setSpeed(1.0)).rejects.toThrow(/battery below/i);
+    await expect(driver.brake(undefined, 1.0)).rejects.toThrow(/battery below/i);
+    await expect(driver.brake(undefined, 0)).resolves.toBeUndefined();
 
     const calAdapter = new MockHubAdapter();
     const calDriver = new VehicleDriver(calAdapter);

@@ -9,11 +9,11 @@
 ## Completed
 - [x] Rebranded project to **Ctrl++** (`ctrl-plus-plus`) with plain-language README.
 - [x] Organized domain specifications into clean 1-word specs: [`profile.md`](specs/profile.md) (`PRF-*`), [`storage.md`](specs/storage.md) (`STR-*`), [`calibration.md`](specs/calibration.md) (`CAL-*`), [`control.md`](specs/control.md) (`CTL-*`), [`ui.md`](specs/ui.md) (`UI-*`), and [`tech.md`](specs/tech.md) (`TCH-*`).
-- [x] Completed **M1 Task 1–3**: Scaffold/contracts, Node 26 CI/CD & GitHub Pages, LWP v3 codec & BLE/Mock adapters (`#14`, `#15`, `#18`).
-- [x] Completed **M1 Task 4–7**: Profiles & `localStorage` (`src/profile.ts`, `src/storage.ts`), `VehicleDriver` calibration/control/watchdog/`CTL-10` (`src/vehicle-driver.ts`), mobile lifecycle (`src/lifecycle.ts`), and React SPA (`src/App.tsx`) (`#19`).
-- [x] Verified **M1 on physical `42124 Off-Road Buggy` (`TechnicHub 88012`)**: Fixed motor encoder `POS` mode (`0x02`), 1m speed-cal `drivePolarity`, `StartPower(127)` hold-brake, and `0x08`/`0x09` string properties.
+- [x] Completed **M1 Task 1–7** (`#14`, `#15`, `#18`, `#19`) and physical hardware verification on **`42124 Off-Road Buggy` (`TechnicHub 88012`)** (`#20`).
+- [x] Completed **M2 Task 1**: `CTL-06` partial target braking (`brake(intensity?, targetSpeedMps = 0)`), M2 tuning constants (`src/driver/constants.ts`), and pure helpers (`src/driver/control.ts`).
+- [x] Completed **M2 Task 2**: `Drive` Cockpit HUD (`src/components/DriveTab.tsx`) & 4-tab SPA navigation (`src/App.tsx`) covering `UI-01` & `UI-09`..`UI-13`.
 
 ---
 
 ## Next Step
-Co-design **Milestone 2** (`Drive` Cockpit HUD in [`ui.md`](specs/ui.md)), including dead-man throttle vs. cruise-control toggle UX.
+Review & merge Draft PR #21 (`feat/m2-drive-hud`), and floor-test the `Drive` Cockpit HUD on **`42124 Off-Road Buggy`**.

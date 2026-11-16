@@ -9,8 +9,8 @@ import { getVehicleProfile } from './profile';
 import { listRememberedHubs } from './storage';
 
 export {
-  BRAKE_TICK_HZ, HOLD_BRAKE_SPEED_MPS, LOW_BATTERY_CUTOFF_PCT,
-  STALL_HOLD_MS, STALL_SPEED_DEG_S, TELEMETRY_MIN_HZ, WATCHDOG_TIMEOUT_MS,
+  BRAKE_TAP_MAX_MS, BRAKE_TAP_STEP_RATIO, BRAKE_TICK_HZ, HOLD_BRAKE_SPEED_MPS, LOW_BATTERY_CUTOFF_PCT,
+  STALL_HOLD_MS, STALL_SPEED_DEG_S, TELEMETRY_MIN_HZ, TILT_DEADZONE_DEG, TILT_MAX_DEG, WATCHDOG_TIMEOUT_MS,
 } from './driver/constants';
 
 export class VehicleDriver {
@@ -21,7 +21,7 @@ export class VehicleDriver {
   private aborts = new AbortRegistry();
   private watchdog: WatchdogTimer;
   private updateListeners = new Set<() => void>();
-  private currentSpeedMps = 0;
+  private currentSpeedMps = 0; private targetSpeedMps = 0;
   private cleanupListeners: Array<() => void> = [];
   private poller = new TelemetryPoller();
   private opGeneration = 0;
@@ -36,21 +36,17 @@ export class VehicleDriver {
 
   attach(): void {
     if (this.cleanupListeners.length > 0) return;
-    const offMessage = this.adapter.onMessage(this.handleMessage);
-    const offDisconnect = this.adapter.onDisconnect(this.handleDisconnect);
-    this.cleanupListeners.push(offMessage, offDisconnect);
+    this.cleanupListeners.push(this.adapter.onMessage(this.handleMessage), this.adapter.onDisconnect(this.handleDisconnect));
   }
 
   getState(): DriverState { return this.state; }
+  getCurrentSpeedMps(): number { return this.currentSpeedMps; }
+  getTargetSpeedMps(): number { return this.targetSpeedMps; }
 
   getHubProfile(): HubProfile | null {
     if (!this.hubProfile) return null;
     const current = listRememberedHubs().find((h) => h.hubId === this.hubProfile?.hubId);
-    if (!current) {
-      this.hubProfile = null;
-      return null;
-    }
-    this.hubProfile = current;
+    this.hubProfile = current ?? null;
     return this.hubProfile;
   }
 
@@ -77,7 +73,7 @@ export class VehicleDriver {
     this.telemetryMgr.resetSession();
     this.speedCalCompleted = false;
     this.activeWatchdogPort = null;
-    this.currentSpeedMps = 0;
+    this.currentSpeedMps = 0; this.targetSpeedMps = 0;
     const gen = ++this.opGeneration;
     this.state = 'CONNECTING';
     try {
@@ -90,9 +86,7 @@ export class VehicleDriver {
       this.hubProfile = profile;
       this.transitionState('READY');
     } catch (error) {
-      if (this.opGeneration === gen && this.state === 'CONNECTING') {
-        this.transitionState('DISCONNECTED');
-      }
+      if (this.opGeneration === gen && this.state === 'CONNECTING') this.transitionState('DISCONNECTED');
       throw error;
     }
   }
@@ -100,7 +94,7 @@ export class VehicleDriver {
   async disconnect(): Promise<void> {
     this.resetActiveOperations();
     const profile = this.hubProfile;
-    this.currentSpeedMps = 0;
+    this.currentSpeedMps = 0; this.targetSpeedMps = 0;
     this.hubProfile = null;
     this.transitionState('DISCONNECTED');
     await terminateHubConnection(this.adapter, profile);
@@ -178,34 +172,53 @@ export class VehicleDriver {
   async setSpeed(targetMps: number): Promise<void> {
     assertOperational('setSpeed', this.state, this.isLowBatteryCutoff());
     const profile = this.requireProfile();
-    const gen = this.opGeneration;
-    await executeDrive(this.adapter, profile, targetMps);
-    if (this.opGeneration !== gen || (this.state !== 'READY' && this.state !== 'DRIVING')) {
-      throw new Error('Speed command aborted');
-    }
+    const drivePort = getVehicleProfile(profile.setId).drivePort;
+    const gen = ++this.opGeneration;
+    this.targetSpeedMps = targetMps;
     this.currentSpeedMps = targetMps;
+    if (this.activeWatchdogPort !== drivePort) this.armSafety(drivePort);
     this.transitionState('DRIVING');
-    this.armSafety(getVehicleProfile(profile.setId).drivePort);
+    try {
+      await executeDrive(this.adapter, profile, targetMps);
+    } catch (error) {
+      if (this.opGeneration === gen) await this.emergencyStop();
+      throw error;
+    }
+    if (this.state !== 'READY' && this.state !== 'DRIVING') throw new Error('Speed command aborted');
+    if (this.opGeneration !== gen) return;
+    this.aborts.abortAll();
+    for (const l of Array.from(this.updateListeners)) l();
   }
 
-  async brake(intensity?: number): Promise<void> {
-    assertOperational('brake', this.state, this.isLowBatteryCutoff());
-    const gen = this.opGeneration;
+  async brake(intensity?: number, targetSpeedMps = 0): Promise<void> {
+    assertOperational('brake', this.state, this.isLowBatteryCutoff(), targetSpeedMps);
+    this.aborts.abortAll();
+    const profile = this.requireProfile();
+    const drivePort = getVehicleProfile(profile.setId).drivePort;
+    const gen = ++this.opGeneration;
+    this.targetSpeedMps = targetSpeedMps;
+    for (const l of Array.from(this.updateListeners)) l();
+    if (this.state === 'READY' && (this.currentSpeedMps !== 0 || targetSpeedMps !== 0)) {
+      if (this.activeWatchdogPort !== drivePort) this.armSafety(drivePort);
+      this.transitionState('DRIVING');
+    }
     try {
       await runBrakeRoutine({
         adapter: this.adapter,
-        profile: this.requireProfile(),
+        profile,
         currentSpeedMps: this.currentSpeedMps,
         intensity,
+        targetSpeedMps,
         isDriving: () => this.opGeneration === gen && this.state === 'DRIVING',
         isCancelled: () => this.opGeneration !== gen,
         onSpeedStep: (speed) => {
           this.currentSpeedMps = speed;
+          for (const l of Array.from(this.updateListeners)) l();
         },
         onHoldBrake: async () => {
           if (this.opGeneration !== gen) return;
           this.clearSafety();
-          this.currentSpeedMps = 0;
+          this.currentSpeedMps = 0; this.targetSpeedMps = 0;
           this.transitionState('READY');
         },
         onAbortRegistered: (abort) => this.aborts.setBrakeAbort(abort),
@@ -218,7 +231,7 @@ export class VehicleDriver {
 
   async emergencyStop(): Promise<void> {
     this.resetActiveOperations();
-    this.currentSpeedMps = 0;
+    this.currentSpeedMps = 0; this.targetSpeedMps = 0;
     this.transitionState('EMERGENCY_STOP');
     await stopAllMotors(this.adapter, this.hubProfile);
   }
@@ -247,26 +260,11 @@ export class VehicleDriver {
     });
   }
 
-  private clearSafety(): void {
-    this.activeWatchdogPort = null;
-    this.poller.stop();
-    this.watchdog.clear();
-  }
+  private clearSafety(): void { this.activeWatchdogPort = null; this.poller.stop(); this.watchdog.clear(); }
+  private resetActiveOperations(): void { this.opGeneration += 1; this.speedCalCompleted = false; this.clearSafety(); this.aborts.abortAll(); }
 
-  private resetActiveOperations(): void {
-    this.opGeneration += 1;
-    this.speedCalCompleted = false;
-    this.clearSafety();
-    this.aborts.abortAll();
-  }
-
-  private resetWatchdog(): void {
-    if (this.state === 'DRIVING' || this.state === 'CALIBRATING') this.watchdog.arm();
-  }
-
-  private triggerWatchdog = (): void => {
-    if (this.state === 'DRIVING' || this.state === 'CALIBRATING') void this.emergencyStop();
-  };
+  private resetWatchdog(): void { if (this.state === 'DRIVING' || this.state === 'CALIBRATING') this.watchdog.arm(); }
+  private triggerWatchdog = (): void => { if (this.state === 'DRIVING' || this.state === 'CALIBRATING') void this.emergencyStop(); };
 
   private requireProfile(): HubProfile {
     const profile = this.getHubProfile();
@@ -292,8 +290,6 @@ export class VehicleDriver {
 
   private handleDisconnect = (): void => {
     this.resetActiveOperations();
-    this.transitionState(
-      this.state === 'DRIVING' || this.state === 'CALIBRATING' ? 'EMERGENCY_STOP' : 'DISCONNECTED',
-    );
+    this.transitionState(this.state === 'DRIVING' || this.state === 'CALIBRATING' ? 'EMERGENCY_STOP' : 'DISCONNECTED');
   };
 }
