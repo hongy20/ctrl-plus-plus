@@ -42,32 +42,49 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
   const [steerPct, setSteerPct] = useState(0);
   const [cruiseHold, setCruiseHold] = useState(() => driver.getTargetSpeedMps() !== 0);
   const [tiltReadout, setTiltReadout] = useState<{ deltaBeta: number; deltaGamma: number } | null>(null);
+  const [liveSpeedMps, setLiveSpeedMps] = useState(0);
 
   const baselineRef = useRef<{ beta: number; gamma: number } | null>(null);
   const brakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const brakeHoldTriggeredRef = useRef(false);
-  const speedDisplayRef = useRef<{ value: number; updatedAt: number }>({ value: 0, updatedAt: 0 });
 
   useEffect(() => {
-    return driver.subscribe(() => {
+    let lastSpeedAt = 0;
+    let speedTimer: ReturnType<typeof setTimeout> | null = null;
+    const syncSpeed = () => {
+      const dt = profile ? (driver.getTelemetry(vehicle.drivePort) as MotorTelemetry | undefined) : undefined;
+      const raw = dt && profile ? calculateTelemetrySpeedMps(dt.speedDegPerSec, profile, vehicle) : 0;
+      const clamped = driver.getTargetSpeedMps() === 0 && Math.abs(raw) < HOLD_BRAKE_SPEED_MPS ? 0 : raw;
+      const nowMs = Date.now();
+      const elapsed = nowMs - lastSpeedAt;
+      if (clamped === 0 || lastSpeedAt === 0 || elapsed >= 200) {
+        if (speedTimer) { clearTimeout(speedTimer); speedTimer = null; }
+        lastSpeedAt = clamped === 0 ? 0 : nowMs;
+        setLiveSpeedMps(clamped);
+      } else if (!speedTimer) {
+        speedTimer = setTimeout(() => { speedTimer = null; lastSpeedAt = Date.now(); syncSpeed(); }, 200 - elapsed);
+      }
+    };
+    syncSpeed();
+    const unsub = driver.subscribe(() => {
       setTick((t) => t + 1);
       const tgt = driver.getTargetSpeedMps();
       setThrottlePct(maxSpeedMps > 0 ? Math.round((tgt / maxSpeedMps) * 100) : 0);
+      syncSpeed();
     });
-  }, [driver, maxSpeedMps]);
+    return () => { unsub(); if (speedTimer) clearTimeout(speedTimer); };
+  }, [driver, maxSpeedMps, profile, vehicle]);
 
   const isEnabled = (driverState === 'READY' || driverState === 'DRIVING') && !isLowBattery && profile !== null;
   const isDisabled = !isEnabled;
 
-  const driveTelemetry = profile ? (driver.getTelemetry(vehicle.drivePort) as MotorTelemetry | undefined) : undefined;
+  useEffect(() => {
+    if (isDisabled) { speedCoalescer.reset(); steerCoalescer.reset(); }
+  }, [isDisabled, speedCoalescer, steerCoalescer]);
+
+  useEffect(() => () => { speedCoalescer.reset(); steerCoalescer.reset(); }, [speedCoalescer, steerCoalescer]);
+
   const steerTelemetry = profile ? (driver.getTelemetry(vehicle.steerPort) as MotorTelemetry | undefined) : undefined;
-  const rawSpeedMps = driveTelemetry && profile ? calculateTelemetrySpeedMps(driveTelemetry.speedDegPerSec, profile, vehicle) : 0;
-  const clampedSpeedMps = driver.getTargetSpeedMps() === 0 && Math.abs(rawSpeedMps) < HOLD_BRAKE_SPEED_MPS ? 0 : rawSpeedMps;
-  const nowMs = Date.now();
-  if (clampedSpeedMps === 0 || speedDisplayRef.current.value === 0 || nowMs - speedDisplayRef.current.updatedAt >= 200) {
-    speedDisplayRef.current = { value: clampedSpeedMps, updatedAt: nowMs };
-  }
-  const liveSpeedMps = speedDisplayRef.current.value;
   const steerAngleDeg = steerTelemetry?.angleDeg ?? 0;
 
   const handleSwitchMode = (newMode: DriveMode) => {
@@ -123,25 +140,15 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
     setThrottlePct(pct);
     speedCoalescer.schedule((pct / 100) * maxSpeedMps);
   };
-
   const handleThrottleRelease = () => {
-    if (!cruiseHold) {
-      setThrottlePct(0);
-      speedCoalescer.reset();
-      void driver.brake().catch(() => {});
-    }
+    if (!cruiseHold) { setThrottlePct(0); speedCoalescer.reset(); void driver.brake().catch(() => {}); }
   };
-
   const handleSteerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const pct = Number(e.target.value);
     setSteerPct(pct);
     steerCoalescer.schedule(pct / 100);
   };
-
-  const handleSteerRelease = () => {
-    setSteerPct(0);
-    steerCoalescer.schedule(0);
-  };
+  const handleSteerRelease = () => { setSteerPct(0); steerCoalescer.schedule(0); };
 
   const handleBrakeDown = () => {
     if (isDisabled) return;
@@ -154,7 +161,6 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
       void driver.brake().catch(() => {});
     }, BRAKE_TAP_MAX_MS);
   };
-
   const handleBrakeUp = () => {
     if (isDisabled) return;
     if (brakeTimerRef.current) { clearTimeout(brakeTimerRef.current); brakeTimerRef.current = null; }
@@ -173,29 +179,18 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
           Low-Battery Cutoff Active (&lt;10%) - Drive Controls Disabled
         </div>
       )}
-
       {driverState === 'EMERGENCY_STOP' && (
         <div role="alert" className="flex items-center justify-between bg-amber-50 border border-amber-300 text-amber-900 px-3 py-2 rounded-lg text-sm">
           <span className="font-medium">Emergency Stop Active — Controls Locked</span>
-          <button
-            type="button"
-            onClick={() => void driver.resetEmergencyStop().catch(() => {})}
-            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs"
-          >
+          <button type="button" onClick={() => void driver.resetEmergencyStop().catch(() => {})} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs">
             Resume Driving
           </button>
         </div>
       )}
-
       {!profile && (
         <section className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center space-y-3">
           <p className="text-sm text-gray-500">Vehicle is not connected.</p>
-          <button
-            type="button"
-            disabled={isLowBattery}
-            onClick={() => void driver.connect().catch(() => {})}
-            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-semibold rounded"
-          >
+          <button type="button" disabled={isLowBattery} onClick={() => void driver.connect().catch(() => {})} className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-semibold rounded">
             Connect
           </button>
         </section>

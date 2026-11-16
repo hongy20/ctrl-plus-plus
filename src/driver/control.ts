@@ -57,19 +57,21 @@ export function createLatestCoalescer<T>(fn: (val: T) => Promise<void>): {
   let inFlight = false;
   let hasPending = false;
   let pendingVal!: T;
-  let lastSent: T | undefined;
+  let hasLastSent = false;
+  let lastSent!: T;
 
   const drain = async () => {
     if (inFlight || !hasPending) return;
     const next = pendingVal;
     hasPending = false;
-    if (next === lastSent) return;
-    lastSent = next;
+    if (hasLastSent && next === lastSent) return;
     inFlight = true;
     try {
       await fn(next);
+      lastSent = next;
+      hasLastSent = true;
     } catch {
-      // driver handles command errors
+      hasLastSent = false;
     } finally {
       inFlight = false;
       if (hasPending) void drain();
@@ -77,15 +79,8 @@ export function createLatestCoalescer<T>(fn: (val: T) => Promise<void>): {
   };
 
   return {
-    schedule(val: T) {
-      pendingVal = val;
-      hasPending = true;
-      void drain();
-    },
-    reset() {
-      hasPending = false;
-      lastSent = undefined;
-    },
+    schedule(val: T) { pendingVal = val; hasPending = true; void drain(); },
+    reset() { hasPending = false; hasLastSent = false; },
   };
 }
 

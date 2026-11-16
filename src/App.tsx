@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { HubAdapter } from './contracts';
 import { WebBleHubAdapter } from './hub-adapter';
 import { attachMobileLifecycleGuards } from './lifecycle';
@@ -23,6 +23,7 @@ export function App(props: AppProps): React.JSX.Element {
 
   const [, setTick] = useState(0);
   const [activeTab, setActiveTab] = useState<TabKey>('connect');
+  const [tempDegC, setTempDegC] = useState<string | null>(null);
 
   // Attach lifecycle guards on mount and cleanup on unmount
   useEffect(() => {
@@ -40,36 +41,58 @@ export function App(props: AppProps): React.JSX.Element {
     };
   }, [driver, propDriver]);
 
-  // Subscribe to driver updates
+  // Subscribe to driver updates and throttle Hub Temperature display with trailing update
   useEffect(() => {
-    return driver.subscribe(() => {
+    let lastUpdatedAt = 0;
+    let latestFormatted: string | null = null;
+    let trailingTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const syncTemp = () => {
+      const t = driver.getTelemetry(0x3d) as { angleDeg: number } | undefined;
+      if (!t || typeof t.angleDeg !== 'number') {
+        if (trailingTimer) {
+          clearTimeout(trailingTimer);
+          trailingTimer = null;
+        }
+        lastUpdatedAt = 0;
+        latestFormatted = null;
+        setTempDegC(null);
+        return;
+      }
+      latestFormatted = String(Math.round(t.angleDeg / 10));
+      const nowMs = Date.now();
+      const elapsed = nowMs - lastUpdatedAt;
+      if (lastUpdatedAt === 0 || elapsed >= 2000) {
+        if (trailingTimer) {
+          clearTimeout(trailingTimer);
+          trailingTimer = null;
+        }
+        lastUpdatedAt = nowMs;
+        setTempDegC(latestFormatted);
+      } else if (!trailingTimer) {
+        trailingTimer = setTimeout(() => {
+          trailingTimer = null;
+          lastUpdatedAt = Date.now();
+          setTempDegC(latestFormatted);
+        }, 2000 - elapsed);
+      }
+    };
+
+    syncTemp();
+    const unsubscribe = driver.subscribe(() => {
+      syncTemp();
       setTick((t) => t + 1);
     });
+    return () => {
+      unsubscribe();
+      if (trailingTimer) clearTimeout(trailingTimer);
+    };
   }, [driver]);
 
   const profile = driver.getHubProfile();
   const driverState = driver.getState();
   const batteryLevel = driver.getBatteryLevel();
   const isLowBattery = batteryLevel !== null && batteryLevel < LOW_BATTERY_CUTOFF_PCT;
-
-  const tempDisplayRef = useRef<{ value: string | null; updatedAt: number }>({
-    value: null,
-    updatedAt: 0,
-  });
-  const tempTelemetry = driver.getTelemetry(0x3d) as { angleDeg: number } | undefined;
-  if (!tempTelemetry || typeof tempTelemetry.angleDeg !== 'number') {
-    tempDisplayRef.current = { value: null, updatedAt: 0 };
-  } else {
-    const nowMs = Date.now();
-    const formatted = String(Math.round(tempTelemetry.angleDeg / 10));
-    if (
-      tempDisplayRef.current.value === null ||
-      nowMs - tempDisplayRef.current.updatedAt >= 2000
-    ) {
-      tempDisplayRef.current = { value: formatted, updatedAt: nowMs };
-    }
-  }
-  const tempDegC = tempDisplayRef.current.value;
 
   const activeHubName =
     profile?.name ?? (adapter.isConnected() ? adapter.getHubName() ?? 'Technic Hub' : '');

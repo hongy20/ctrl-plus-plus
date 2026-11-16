@@ -363,6 +363,7 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
   });
 
   it('UI-01 / UI-09 / UI-10: stacks TopBar battery & temperature vertically on narrow screens, coalesces in-flight steering drags to latest value, and shows Resume Driving banner in EMERGENCY_STOP', async () => {
+    vi.useFakeTimers();
     await act(async () => {
       root!.render(createElement(App, { adapter, driver }));
     });
@@ -405,8 +406,11 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
     // Trigger EMERGENCY_STOP and verify in-tab banner + Resume Driving button + Speed reset to 0.00 m/s
     await act(async () => {
       adapter.emitMessage(makePortValuePacket(0x00, 0));
+      vi.advanceTimersByTime(100);
       adapter.emitMessage(makePortValuePacket(0x00, -360));
     });
+    expect(container.textContent).toContain('2.25 m/s');
+
     await clickButton(container, /^e-stop$/i);
     expect(driver.getState()).toBe('EMERGENCY_STOP');
     expect(container.textContent).toContain('Emergency Stop Active');

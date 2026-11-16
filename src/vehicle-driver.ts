@@ -175,14 +175,10 @@ export class VehicleDriver {
     const drivePort = getVehicleProfile(profile.setId).drivePort;
     const gen = ++this.opGeneration;
     this.targetSpeedMps = targetMps;
-    this.currentSpeedMps = targetMps;
     if (targetMps !== 0) {
+      this.currentSpeedMps = targetMps;
       if (this.activeWatchdogPort !== drivePort) this.armSafety(drivePort);
       this.transitionState('DRIVING');
-    } else {
-      this.clearSafety();
-      this.telemetryMgr.zeroPortSpeed(drivePort);
-      if (this.state === 'DRIVING') this.transitionState('READY');
     }
     try {
       await executeDrive(this.adapter, profile, targetMps);
@@ -193,6 +189,12 @@ export class VehicleDriver {
     if (this.state !== 'READY' && this.state !== 'DRIVING') throw new Error('Speed command aborted');
     if (this.opGeneration !== gen) return;
     this.aborts.abortAll();
+    if (targetMps === 0) {
+      this.clearSafety();
+      this.telemetryMgr.zeroPortSpeed(drivePort);
+      this.currentSpeedMps = 0;
+      if (this.state === 'DRIVING') { this.transitionState('READY'); return; }
+    }
     for (const l of Array.from(this.updateListeners)) l();
   }
 
