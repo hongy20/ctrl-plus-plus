@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createLatestCoalescer } from '../driver/control';
 import type { VehicleDriver } from '../vehicle-driver';
 
 export interface DebugTabProps {
@@ -8,11 +9,16 @@ export interface DebugTabProps {
 
 export function DebugTab({ driver, isLowBattery }: DebugTabProps): React.JSX.Element {
   const [steeringValue, setSteeringValue] = useState(0);
+  const steerCoalescer = useMemo(
+    () => createLatestCoalescer((val: number) => driver.setSteering(val)),
+    [driver],
+  );
+  useEffect(() => () => steerCoalescer.reset(), [steerCoalescer]);
 
   const handleSteeringChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Number(e.target.value);
     setSteeringValue(val);
-    void driver.setSteering(val).catch(() => {});
+    steerCoalescer.schedule(val);
   };
 
   const telemetry = driver.getTelemetry() as Map<

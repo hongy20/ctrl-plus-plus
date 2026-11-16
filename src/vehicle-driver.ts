@@ -175,9 +175,11 @@ export class VehicleDriver {
     const drivePort = getVehicleProfile(profile.setId).drivePort;
     const gen = ++this.opGeneration;
     this.targetSpeedMps = targetMps;
-    this.currentSpeedMps = targetMps;
-    if (this.activeWatchdogPort !== drivePort) this.armSafety(drivePort);
-    this.transitionState('DRIVING');
+    if (targetMps !== 0) {
+      this.currentSpeedMps = targetMps;
+      if (this.activeWatchdogPort !== drivePort) this.armSafety(drivePort);
+      this.transitionState('DRIVING');
+    }
     try {
       await executeDrive(this.adapter, profile, targetMps);
     } catch (error) {
@@ -187,6 +189,12 @@ export class VehicleDriver {
     if (this.state !== 'READY' && this.state !== 'DRIVING') throw new Error('Speed command aborted');
     if (this.opGeneration !== gen) return;
     this.aborts.abortAll();
+    if (targetMps === 0) {
+      this.clearSafety();
+      this.telemetryMgr.zeroPortSpeed(drivePort);
+      this.currentSpeedMps = 0;
+      if (this.state === 'DRIVING') { this.transitionState('READY'); return; }
+    }
     for (const l of Array.from(this.updateListeners)) l();
   }
 
@@ -218,6 +226,7 @@ export class VehicleDriver {
         onHoldBrake: async () => {
           if (this.opGeneration !== gen) return;
           this.clearSafety();
+          this.telemetryMgr.zeroPortSpeed(drivePort);
           this.currentSpeedMps = 0; this.targetSpeedMps = 0;
           this.transitionState('READY');
         },
@@ -231,6 +240,7 @@ export class VehicleDriver {
 
   async emergencyStop(): Promise<void> {
     this.resetActiveOperations();
+    this.telemetryMgr.zeroPortSpeed();
     this.currentSpeedMps = 0; this.targetSpeedMps = 0;
     this.transitionState('EMERGENCY_STOP');
     await stopAllMotors(this.adapter, this.hubProfile);
@@ -282,10 +292,9 @@ export class VehicleDriver {
         }
       },
       this.activeWatchdogPort,
+      () => { for (const listener of Array.from(this.updateListeners)) listener(); },
     );
-    if (changed) {
-      for (const listener of Array.from(this.updateListeners)) listener();
-    }
+    if (changed) for (const listener of Array.from(this.updateListeners)) listener();
   };
 
   private handleDisconnect = (): void => {

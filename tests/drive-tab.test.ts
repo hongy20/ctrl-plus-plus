@@ -223,6 +223,13 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
     expect(container.textContent).toContain('2.25 m/s');
     expect(container.textContent).toContain('25°');
 
+    // Duplicate-angle poll packet within < 200ms must not drop speed to 0.00 m/s
+    await act(async () => {
+      vi.advanceTimersByTime(20);
+      adapter.emitMessage(makePortValuePacket(0x00, -360));
+    });
+    expect(container.textContent).toContain('2.25 m/s');
+
     await act(async () => {
       adapter.emitMessage(makeBatteryPacket(LOW_BATTERY_CUTOFF_PCT - 5));
     });
@@ -330,10 +337,16 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
     // First reading establishes baseline (beta=30, gamma=0)
     await dispatchTilt(30, 0);
     expect(speedSpy).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Tilt Sensor Active');
 
     // Small tilt within ±TILT_DEADZONE_DEG stays in deadzone (target speed 0)
     await dispatchTilt(30 + TILT_DEADZONE_DEG - 1, TILT_DEADZONE_DEG - 1);
     expect(speedSpy).toHaveBeenLastCalledWith(0);
+
+    // Duplicate tilt reading in deadzone does not re-send duplicate BLE command
+    const callsAfterFirstZero = speedSpy.mock.calls.length;
+    await dispatchTilt(30 + TILT_DEADZONE_DEG - 2, TILT_DEADZONE_DEG - 2);
+    expect(speedSpy.mock.calls.length).toBe(callsAfterFirstZero);
 
     // Deflect beyond TILT_DEADZONE_DEG up to TILT_MAX_DEG
     await dispatchTilt(30 + TILT_MAX_DEG, TILT_MAX_DEG);
@@ -341,11 +354,70 @@ describe('Drive Cockpit HUD (UI-01, UI-09..UI-13)', () => {
     expect(speedSpy.mock.calls[speedSpy.mock.calls.length - 1]![0]).not.toBe(0);
     expect(steerSpy).toHaveBeenCalled();
     expect(steerSpy.mock.calls[steerSpy.mock.calls.length - 1]![0]).not.toBe(0);
+    expect(container.textContent).toContain('30.0°');
 
     // Toggle back to Touch mode (Tilt OFF)
     await clickButton(container, /touch/i);
     expect(brakeSpy).toHaveBeenCalled();
     expect(steerSpy).toHaveBeenLastCalledWith(0);
+  });
+
+  it('UI-01 / UI-09 / UI-10: stacks TopBar battery & temperature vertically on narrow screens, coalesces in-flight steering drags to latest value, and shows Resume Driving banner in EMERGENCY_STOP', async () => {
+    vi.useFakeTimers();
+    await act(async () => {
+      root!.render(createElement(App, { adapter, driver }));
+    });
+
+    await clickButton(container, /^connect$/i);
+    await act(async () => {
+      adapter.emitMessage(makeBatteryPacket(95));
+      adapter.emitMessage(makePortValuePacket(0x3d, 284));
+    });
+
+    const telemetryBox = container.querySelector('[data-testid="topbar-telemetry"]');
+    expect(telemetryBox?.className).toContain('flex-col');
+    expect(telemetryBox?.className).toContain('items-start');
+    expect(telemetryBox?.className).toContain('sm:flex-row');
+    expect(telemetryBox?.textContent).toContain('28°C');
+
+    await clickButton(container, /^drive$/i);
+
+    // Coalesce rapid steering drags while BLE write is in flight
+    let resolveSteer!: () => void;
+    const steerSpy = vi.spyOn(driver, 'setSteering').mockImplementationOnce(
+      () => new Promise<void>((r) => { resolveSteer = r; }),
+    );
+    const steerSlider = container.querySelector('input[aria-label="Steering"]') as HTMLInputElement;
+    expect(steerSlider.className).toContain('touch-none');
+
+    await setRangeValue(steerSlider, '10');
+    await setRangeValue(steerSlider, '30');
+    await setRangeValue(steerSlider, '70');
+    expect(steerSpy).toHaveBeenCalledTimes(1);
+    expect(steerSpy).toHaveBeenNthCalledWith(1, 0.1);
+
+    await act(async () => {
+      resolveSteer();
+      await Promise.resolve();
+    });
+    expect(steerSpy).toHaveBeenCalledTimes(2);
+    expect(steerSpy).toHaveBeenNthCalledWith(2, 0.7);
+
+    // Trigger EMERGENCY_STOP and verify in-tab banner + Resume Driving button + Speed reset to 0.00 m/s
+    await act(async () => {
+      adapter.emitMessage(makePortValuePacket(0x00, 0));
+      vi.advanceTimersByTime(100);
+      adapter.emitMessage(makePortValuePacket(0x00, -360));
+    });
+    expect(container.textContent).toContain('2.25 m/s');
+
+    await clickButton(container, /^e-stop$/i);
+    expect(driver.getState()).toBe('EMERGENCY_STOP');
+    expect(container.textContent).toContain('Emergency Stop Active');
+    expect(container.textContent).toContain('0.00 m/s');
+
+    await clickButton(container, /resume driving/i);
+    expect(driver.getState()).toBe('READY');
   });
 
   it('UI-13: tapping Brake (< BRAKE_TAP_MAX_MS) steps target speed toward 0 by BRAKE_TAP_STEP_RATIO and ramps via brake(undefined, targetMps); holding Brake (>= BRAKE_TAP_MAX_MS) ramps all the way to 0 via brake()', async () => {

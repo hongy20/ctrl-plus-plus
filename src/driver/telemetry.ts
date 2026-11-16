@@ -58,7 +58,18 @@ export function parseLwpPacket(
   ) {
     const prev = prevTelemetry.get(msg.port);
     const dt = prev ? (now - prev.timestampMs) / 1000 : 0;
-    const speedDegPerSec = prev && dt > 0 ? (msg.value - prev.angleDeg) / dt : 0;
+    if (prev && msg.value === prev.angleDeg && dt > 0 && dt < 0.2) {
+      return {
+        kind: 'port_value',
+        telemetry: prev,
+        now,
+      };
+    }
+    const rawSpeed = prev && dt > 0 && msg.value !== prev.angleDeg ? (msg.value - prev.angleDeg) / dt : 0;
+    const speedDegPerSec =
+      rawSpeed === 0 || !prev || prev.speedDegPerSec === 0
+        ? rawSpeed
+        : 0.3 * rawSpeed + 0.7 * prev.speedDegPerSec;
     return {
       kind: 'port_value',
       telemetry: {
@@ -79,6 +90,7 @@ export class TelemetryManager {
   private attachedPorts = new Map<number, { attached: boolean; ioTypeId?: number }>();
   private hubProperties = new Map<number, unknown>();
   private portValueListeners = new Set<PortValueListener>();
+  private speedIdleTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
   getTelemetry(port?: number): MotorTelemetry | Map<number, MotorTelemetry> | undefined {
     if (port !== undefined) {
@@ -117,6 +129,7 @@ export class TelemetryManager {
     onResetWatchdog: () => void,
     onLowBatteryCutoff: () => void,
     requiredPort?: number | null,
+    onSpeedIdleZero?: () => void,
   ): boolean {
     const res = parseLwpPacket(packet, this.telemetry);
     if (res.kind === 'attached_io') {
@@ -138,12 +151,25 @@ export class TelemetryManager {
       return true;
     }
     if (res.kind === 'port_value') {
-      if (requiredPort == null || res.telemetry.port === requiredPort) {
+      const port = res.telemetry.port;
+      if (requiredPort == null || port === requiredPort) {
         onResetWatchdog();
       }
-      this.telemetry.set(res.telemetry.port, res.telemetry);
+      this.telemetry.set(port, res.telemetry);
+      const prevTimer = this.speedIdleTimers.get(port);
+      if (prevTimer) clearTimeout(prevTimer);
+      if (res.telemetry.speedDegPerSec !== 0 && onSpeedIdleZero) {
+        this.speedIdleTimers.set(
+          port,
+          setTimeout(() => {
+            this.speedIdleTimers.delete(port);
+            this.zeroPortSpeed(port);
+            onSpeedIdleZero();
+          }, 250),
+        );
+      }
       for (const listener of Array.from(this.portValueListeners)) {
-        listener(res.telemetry.port, res.telemetry.angleDeg, res.now);
+        listener(port, res.telemetry.angleDeg, res.now);
       }
       return true;
     }
@@ -151,12 +177,40 @@ export class TelemetryManager {
   }
 
   resetSession(): void {
+    this.clearIdleTimers();
     this.telemetry.clear();
     this.attachedPorts.clear();
     this.hubProperties.clear();
   }
 
+  zeroPortSpeed(port?: number): void {
+    if (port !== undefined) {
+      const t = this.speedIdleTimers.get(port);
+      if (t) {
+        clearTimeout(t);
+        this.speedIdleTimers.delete(port);
+      }
+      const curr = this.telemetry.get(port);
+      if (curr && curr.speedDegPerSec !== 0) {
+        this.telemetry.set(port, { ...curr, speedDegPerSec: 0 });
+      }
+      return;
+    }
+    this.clearIdleTimers();
+    for (const [p, curr] of this.telemetry.entries()) {
+      if (curr.speedDegPerSec !== 0) {
+        this.telemetry.set(p, { ...curr, speedDegPerSec: 0 });
+      }
+    }
+  }
+
   clear(): void {
+    this.clearIdleTimers();
     this.portValueListeners.clear();
+  }
+
+  private clearIdleTimers(): void {
+    for (const timer of this.speedIdleTimers.values()) clearTimeout(timer);
+    this.speedIdleTimers.clear();
   }
 }
