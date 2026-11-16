@@ -181,8 +181,9 @@ export function assertOperational(
   action: 'calibrateSteering' | 'startSpeedCalRun' | 'setSteering' | 'setSpeed' | 'brake',
   state: DriverState,
   isLowBattery: boolean,
+  targetSpeedMps = 0,
 ): void {
-  if (action !== 'brake' && isLowBattery) {
+  if (isLowBattery && (action !== 'brake' || targetSpeedMps !== 0)) {
     throw new Error(`Cannot ${action}: hub battery below ${LOW_BATTERY_CUTOFF_PCT}%`);
   }
   if (state === 'CALIBRATING') {
