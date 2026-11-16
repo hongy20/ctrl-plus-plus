@@ -51,46 +51,55 @@ export function TopBar({
             : BatteryFull;
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-2 bg-slate-900 text-white shadow-md">
-      <div className="flex items-center space-x-3">
+    <header className="sticky top-0 z-50 flex items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-slate-900 text-white shadow-md">
+      <div className="flex items-center gap-2 min-w-0">
         <span
           data-testid="led-swatch"
-          className="inline-block w-4 h-4 rounded-full border border-gray-400"
+          className="inline-block w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 rounded-full border border-gray-400"
           style={{ backgroundColor: LED_COLOR_MAP[ledColor ?? 10] ?? '#ffffff' }}
         />
-        <span className="font-semibold">{activeHubName || 'Ctrl++'}</span>
-        <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-200 uppercase tracking-wider">
+        <span className="font-semibold text-sm sm:text-base truncate">
+          {activeHubName || 'Ctrl++'}
+        </span>
+        <span className="shrink-0 text-[11px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded bg-slate-700 text-slate-200 uppercase tracking-wider whitespace-nowrap">
           {driverState}
         </span>
       </div>
 
-      <div className="flex items-center space-x-3 text-sm">
-        {batteryLevel !== null && (
-          <span
-            title="Hub Battery Level"
-            data-battery-warning={batteryLevel < 20 ? 'true' : 'false'}
-            className={`inline-flex items-center gap-1 ${
-              batteryLevel < 20 ? 'text-red-400 font-bold' : 'text-slate-200'
-            }`}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {(batteryLevel !== null || tempDegC !== null) && (
+          <div
+            data-testid="topbar-telemetry"
+            className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-3 text-xs sm:text-sm leading-tight whitespace-nowrap tabular-nums"
           >
-            <BatteryIcon aria-hidden="true" className="w-4 h-4 shrink-0" />
-            {batteryLevel}%
-          </span>
-        )}
-        {tempDegC !== null && (
-          <span
-            title="Hub Internal Temperature"
-            className="inline-flex items-center gap-1 text-slate-200"
-          >
-            <Thermometer aria-hidden="true" className="w-4 h-4 shrink-0" />
-            {tempDegC}°C
-          </span>
+            {batteryLevel !== null && (
+              <span
+                title="Hub Battery Level"
+                data-battery-warning={batteryLevel < 20 ? 'true' : 'false'}
+                className={`inline-flex items-center gap-1 ${
+                  batteryLevel < 20 ? 'text-red-400 font-bold' : 'text-slate-200'
+                }`}
+              >
+                <BatteryIcon aria-hidden="true" className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                {batteryLevel}%
+              </span>
+            )}
+            {tempDegC !== null && (
+              <span
+                title="Hub Internal Temperature"
+                className="inline-flex items-center gap-1 text-slate-200"
+              >
+                <Thermometer aria-hidden="true" className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                {tempDegC}°C
+              </span>
+            )}
+          </div>
         )}
         {driverState === 'EMERGENCY_STOP' ? (
           <button
             type="button"
             onClick={onResume}
-            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded shadow"
+            className="shrink-0 whitespace-nowrap px-2.5 sm:px-3 py-1 text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded shadow"
           >
             Resume
           </button>
@@ -98,7 +107,7 @@ export function TopBar({
           <button
             type="button"
             onClick={onEmergencyStop}
-            className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded shadow"
+            className="shrink-0 whitespace-nowrap px-2.5 sm:px-3 py-1 text-xs sm:text-sm bg-red-600 hover:bg-red-500 text-white font-bold rounded shadow"
           >
             E-STOP
           </button>

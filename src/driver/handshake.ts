@@ -21,5 +21,5 @@ export async function sendHubInitHandshake(
   for (const port of [vehicle.drivePort, vehicle.steerPort]) {
     await adapter.send(encodePortInputFormatSetup(port, 0x02, 1, true));
   }
-  await adapter.send(encodePortInputFormatSetup(0x3d, 0x00, 1, true));
+  await adapter.send(encodePortInputFormatSetup(0x3d, 0x00, 5, true));
 }

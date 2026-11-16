@@ -50,6 +50,45 @@ export function normalizeTiltAxis(
   return delta >= 0 ? clamped : -clamped;
 }
 
+export function createLatestCoalescer<T>(fn: (val: T) => Promise<void>): {
+  schedule: (val: T) => void;
+  reset: () => void;
+} {
+  let inFlight = false;
+  let hasPending = false;
+  let pendingVal!: T;
+  let lastSent: T | undefined;
+
+  const drain = async () => {
+    if (inFlight || !hasPending) return;
+    const next = pendingVal;
+    hasPending = false;
+    if (next === lastSent) return;
+    lastSent = next;
+    inFlight = true;
+    try {
+      await fn(next);
+    } catch {
+      // driver handles command errors
+    } finally {
+      inFlight = false;
+      if (hasPending) void drain();
+    }
+  };
+
+  return {
+    schedule(val: T) {
+      pendingVal = val;
+      hasPending = true;
+      void drain();
+    },
+    reset() {
+      hasPending = false;
+      lastSent = undefined;
+    },
+  };
+}
+
 export function calculateTargetSteerPos(angleNorm: number, profile: HubProfile, vehicle: VehicleProfile): number {
   const clampedNorm = Math.max(-1.0, Math.min(1.0, angleNorm));
   const leftLimit = profile.calibration.leftLimit ?? -100;

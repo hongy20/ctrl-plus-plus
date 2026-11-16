@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { HubAdapter } from './contracts';
 import { WebBleHubAdapter } from './hub-adapter';
 import { attachMobileLifecycleGuards } from './lifecycle';
@@ -52,11 +52,24 @@ export function App(props: AppProps): React.JSX.Element {
   const batteryLevel = driver.getBatteryLevel();
   const isLowBattery = batteryLevel !== null && batteryLevel < LOW_BATTERY_CUTOFF_PCT;
 
+  const tempDisplayRef = useRef<{ value: string | null; updatedAt: number }>({
+    value: null,
+    updatedAt: 0,
+  });
   const tempTelemetry = driver.getTelemetry(0x3d) as { angleDeg: number } | undefined;
-  const tempDegC =
-    tempTelemetry && typeof tempTelemetry.angleDeg === 'number'
-      ? (tempTelemetry.angleDeg / 10).toFixed(1)
-      : null;
+  if (!tempTelemetry || typeof tempTelemetry.angleDeg !== 'number') {
+    tempDisplayRef.current = { value: null, updatedAt: 0 };
+  } else {
+    const nowMs = Date.now();
+    const formatted = String(Math.round(tempTelemetry.angleDeg / 10));
+    if (
+      tempDisplayRef.current.value === null ||
+      nowMs - tempDisplayRef.current.updatedAt >= 2000
+    ) {
+      tempDisplayRef.current = { value: formatted, updatedAt: nowMs };
+    }
+  }
+  const tempDegC = tempDisplayRef.current.value;
 
   const activeHubName =
     profile?.name ?? (adapter.isConnected() ? adapter.getHubName() ?? 'Technic Hub' : '');
