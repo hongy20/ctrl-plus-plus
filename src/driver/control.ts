@@ -59,19 +59,20 @@ export function createLatestCoalescer<T>(fn: (val: T) => Promise<void>): {
   let pendingVal!: T;
   let hasLastSent = false;
   let lastSent!: T;
+  let resetGen = 0;
 
   const drain = async () => {
     if (inFlight || !hasPending) return;
     const next = pendingVal;
     hasPending = false;
     if (hasLastSent && next === lastSent) return;
+    const gen = resetGen;
     inFlight = true;
     try {
       await fn(next);
-      lastSent = next;
-      hasLastSent = true;
+      if (gen === resetGen) { lastSent = next; hasLastSent = true; }
     } catch {
-      hasLastSent = false;
+      if (gen === resetGen) hasLastSent = false;
     } finally {
       inFlight = false;
       if (hasPending) void drain();
@@ -80,7 +81,7 @@ export function createLatestCoalescer<T>(fn: (val: T) => Promise<void>): {
 
   return {
     schedule(val: T) { pendingVal = val; hasPending = true; void drain(); },
-    reset() { hasPending = false; hasLastSent = false; },
+    reset() { resetGen += 1; hasPending = false; hasLastSent = false; },
   };
 }
 

@@ -62,7 +62,7 @@ export function DriveTab({ driver, profile, driverState, isLowBattery }: DriveTa
         lastSpeedAt = clamped === 0 ? 0 : nowMs;
         setLiveSpeedMps(clamped);
       } else if (!speedTimer) {
-        speedTimer = setTimeout(() => { speedTimer = null; lastSpeedAt = Date.now(); syncSpeed(); }, 200 - elapsed);
+        speedTimer = setTimeout(() => { speedTimer = null; syncSpeed(); }, 200 - elapsed);
       }
     };
     syncSpeed();
